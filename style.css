@@ -76,3 +76,4 @@ footer{max-width:1000px;margin:20px auto 40px;padding:18px;font-size:18px;opacit
 @media(max-width:600px){html,body{font-size:18px}.grid-cards{grid-template-columns:repeat(2,1fr);gap:12px}.vhs-osd{font-size:18px}.hero{padding-top:50px}.dimg{width:140px;height:140px}.stamp{top:8px;right:50px}.dossier{padding:18px 14px}.menu{transform:rotate(-4deg);animation:none}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important}}
 @media(max-width:600px){.title{font-size:12vw;transform:rotate(-4deg) scaleX(.82)}.pre{font-size:8px}}
+.menu a.menulink{font-family:'Press Start 2P';font-size:clamp(10px,2vw,16px);color:var(--cyan);padding:6px 14px;text-decoration:none;text-shadow:2px 2px 0 #000}.menu a.menulink:hover{color:#000;background:var(--cyan)}

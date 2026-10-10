@@ -1,39 +1,38 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>HOTLINE MIAMI ARCHIVE // Do you like hurting other people?</title>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>HOTLINE MIAMI ARCHIVE // 3D Tape Deck</title>
+<script>
+(function(){var q=new URLSearchParams(location.search);if(q.get('grid')==='1')return location.replace('grid.html'+location.hash);
+var rm=matchMedia('(prefers-reduced-motion: reduce)').matches&&q.get('3d')!=='1';var gl=false;try{var c=document.createElement('canvas');gl=!!(c.getContext('webgl2')||c.getContext('webgl'))}catch(e){}
+if(!gl||rm)location.replace('grid.html'+location.hash);})();
+</script>
 <meta name="description" content="Fan archive of every character, mask and weapon in Hotline Miami and Hotline Miami 2: Wrong Number.">
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#ff2a8a"><link rel="icon" href="icons/icon-192.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="HM Archive">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Monoton&display=swap" rel="stylesheet">
-<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#ff2a8a"><link rel="icon" href="icons/icon-192.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="HM Archive"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style.css"></head><body>
-<div class="bg"><div class="sun"></div><div class="grid"></div></div>
+<link rel="stylesheet" href="style.css"><link rel="stylesheet" href="helix.css">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
+</head><body class="helix-page">
+<canvas id="gl" aria-label="3D card deck. Scroll, swipe or use arrow keys; Enter opens the active file."></canvas>
 <div class="grain"></div><div class="scan"></div><div class="vignette"></div>
 <div class="vhs-osd"><span class="play">&#9654; PLAY</span><span id="clock">SP 0:00:00</span></div>
-<div class="vhs-osd right"><span>CH 03</span><span class="rec">● REC</span></div>
-<header class="hero">
-  <p class="pre">DENNATON GAMES // DEVOLVER DIGITAL — A FAN ARCHIVE</p>
+<div class="vhs-osd right"><span id="ch">CH 01</span><span class="rec">● REC</span></div>
+<aside class="hx-menu">
   <h1 class="title" id="title" aria-label="Hotline Miami">HOTLINE MIAMI</h1>
-  <h2 class="sub"><span>1</span> &amp; <span>2: WRONG NUMBER</span></h2>
-  <p class="quote">"Do you like hurting other people?"</p>
-</header>
-<nav class="menu" id="menu" aria-label="Sections">
-  <button data-tab="characters" class="on">CHARACTERS</button>
-  <button data-tab="masks">MASKS</button>
-  <button data-tab="weapons">WEAPONS</button>
-  <button id="music" aria-pressed="false">MUSIC: OFF</button>
-</nav>
-<section class="controls tape">
-  <input id="q" type="search" placeholder="SEARCH THE ARCHIVE..." aria-label="Search">
-  <div class="filters" id="gamef">
-    <button data-g="all" class="on">ALL</button><button data-g="HM1">HM1</button><button data-g="HM2">HM2</button>
-  </div>
-  <div class="filters" id="subf"></div>
-  <div id="count" class="count"></div>
-</section>
-<main id="grid" class="grid-cards"></main>
+  <p class="hx-sub">ARCHIVE // 1 &amp; 2: WRONG NUMBER</p>
+  <nav class="hx-decks" id="decks">
+    <button data-deck="characters" class="on">CHARACTERS</button>
+    <button data-deck="masks">MASKS</button>
+    <button data-deck="weapons">WEAPONS</button>
+    <button data-deck="dead">BODY COUNT</button>
+  </nav>
+  <div class="hx-info"><div id="hxIdx">01 / 54</div><div id="hxName">…</div><div id="hxTags"></div>
+    <button id="hxOpen" class="hx-open">▸ OPEN FILE</button></div>
+  <a class="hx-grid" href="grid.html">▦ GRID VIEW / SEARCH</a>
+  <p class="hx-hint">SCROLL · SWIPE · ↑↓ · ENTER</p>
+</aside>
+<div id="loading" class="hx-loading">REWINDING TAPE…</div>
 <div id="modal" class="modal" hidden><div class="dossier tape" role="dialog" aria-modal="true"><button class="x" aria-label="Close">✕</button><div id="mbody"></div></div></div>
-<footer>
-  <p>Unofficial, non-commercial fan site. <b>Hotline Miami</b> and <b>Hotline Miami 2: Wrong Number</b> © Dennaton Games, published by Devolver Digital. All characters, sprites and artwork belong to their owners.</p>
-  <p>Text summaries and images sourced from the <a href="https://hotlinemiami.fandom.com" target="_blank" rel="noopener">Hotline Miami Wiki</a> (Fandom, CC BY-SA). Story text is condensed from the wiki and contains spoilers. "?" marks a status the wiki only presumes.</p>
-  <p class="music-note">Music toggle plays a tiny synth loop generated in your browser — no audio files are shipped.</p>
-</footer>
-<script src="app.js"></script></body></html>
+<footer class="hx-foot">Fan site · Hotline Miami © Dennaton Games / Devolver Digital · data &amp; art: <a href="https://hotlinemiami.fandom.com" target="_blank" rel="noopener">Hotline Miami Wiki</a> (CC BY-SA)</footer>
+<script src="app.js"></script>
+<script type="module" src="helix.js"></script>
+</body></html>

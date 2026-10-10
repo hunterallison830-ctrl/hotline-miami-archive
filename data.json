@@ -10,7 +10,7 @@
    ],
    "status": "DEAD",
    "death": "Deceased (Nuclear Blast)",
-   "img": "img/c/jacket.jpg",
+   "img": "img/c/jacket.png",
    "desc": "Jacket, also referred to in game files as Player or P, is the main protagonist and player character of Hotline Miami, and a side character in Hotline Miami 2: Wrong Number. He received this fan nickname because of his distinctive letterman jacket. Developer Dennis Wedin used the nickname in various interviews, and in Hotline Miami 2: Wrong Number, all assets related to him refer him with that alias. Over the course of the first game, he dons various animal masks (leading to other fan nicknames) and performs a number of brutal assassinations in response to cryptic messages left on his answering machine.",
    "story": [
     {
@@ -1552,7 +1552,7 @@
    ],
    "status": "DEAD",
    "death": "Dead (suicide with pistol)",
-   "img": "img/c/russian-general.jpg",
+   "img": "img/c/russian-general.png",
    "desc": "The Russian General is a minor character briefly seen in the Casualties scene of Hotline Miami 2: Wrong Number. He is the main antagonist of Beard's missions, shown operating out of a power plant in the volcanic region of Hawaii on October 30th, 1985.",
    "story": [
     {
@@ -1825,7 +1825,7 @@
   {
    "name": "Richard",
    "animal": "Rooster",
-   "img": "img/m/richard.gif",
+   "img": "img/m/richard.png",
    "entries": [
     {
      "game": "HM1",
@@ -1845,7 +1845,7 @@
   {
    "name": "Rasmus",
    "animal": "Owl",
-   "img": "img/m/rasmus.gif",
+   "img": "img/m/rasmus.png",
    "entries": [
     {
      "game": "HM1",
@@ -1865,7 +1865,7 @@
   {
    "name": "Tony",
    "animal": "Tiger",
-   "img": "img/m/tony.gif",
+   "img": "img/m/tony.png",
    "entries": [
     {
      "game": "HM1",
@@ -1891,7 +1891,7 @@
   {
    "name": "Aubrey",
    "animal": "Pig",
-   "img": "img/m/aubrey.gif",
+   "img": "img/m/aubrey.png",
    "entries": [
     {
      "game": "HM1",
@@ -1917,7 +1917,7 @@
   {
    "name": "Don Juan",
    "animal": "Horse",
-   "img": "img/m/don-juan.gif",
+   "img": "img/m/don-juan.png",
    "entries": [
     {
      "game": "HM1",
@@ -1937,7 +1937,7 @@
   {
    "name": "Graham",
    "animal": "Rabbit",
-   "img": "img/m/graham.gif",
+   "img": "img/m/graham.png",
    "entries": [
     {
      "game": "HM1",
@@ -1957,7 +1957,7 @@
   {
    "name": "Dennis",
    "animal": "Wolf",
-   "img": "img/m/dennis.gif",
+   "img": "img/m/dennis.png",
    "entries": [
     {
      "game": "HM1",
@@ -1977,7 +1977,7 @@
   {
    "name": "George",
    "animal": "Giraffe",
-   "img": "img/m/george.gif",
+   "img": "img/m/george.png",
    "entries": [
     {
      "game": "HM1",
@@ -1997,19 +1997,19 @@
   {
    "name": "Ted",
    "animal": "Dog",
-   "img": "img/m/ted.gif",
+   "img": "img/m/ted.png",
    "entries": [
     {
      "game": "HM1",
      "owner": "Jacket",
-     "ability": "No Perks",
-     "detail": "Dogs Don't AttackObtained by achieving a high score in Neighbors - Dogs sprint after Jacket, but will not attack."
+     "ability": "Dogs Don't Attack",
+     "detail": "Obtained by achieving a high score in Neighbors - Dogs sprint after Jacket, but will not attack."
     },
     {
      "game": "HM2",
      "owner": "Jacket",
-     "ability": "No Perks",
-     "detail": "Dogs Don't AttackDogs sprint after Jacket, but will not attack."
+     "ability": "Dogs Don't Attack",
+     "detail": "Dogs sprint after Jacket, but will not attack."
     }
    ],
    "wiki": "https://hotlinemiami.fandom.com/wiki/Ted_Mask"
@@ -2017,7 +2017,7 @@
   {
    "name": "Rufus",
    "animal": "Elephant",
-   "img": "img/m/rufus.gif",
+   "img": "img/m/rufus.png",
    "entries": [
     {
      "game": "HM1",
@@ -2037,7 +2037,7 @@
   {
    "name": "Rami",
    "animal": "Camel",
-   "img": "img/m/rami.gif",
+   "img": "img/m/rami.png",
    "entries": [
     {
      "game": "HM1",
@@ -2057,7 +2057,7 @@
   {
    "name": "Willem",
    "animal": "Chimpanzee",
-   "img": "img/m/willem.gif",
+   "img": "img/m/willem.png",
    "entries": [
     {
      "game": "HM1",
@@ -2077,7 +2077,7 @@
   {
    "name": "Peter",
    "animal": "Unicorn",
-   "img": "img/m/peter.gif",
+   "img": "img/m/peter.png",
    "entries": [
     {
      "game": "HM1",
@@ -2097,7 +2097,7 @@
   {
    "name": "Zack",
    "animal": "Frog",
-   "img": "img/m/zack.gif",
+   "img": "img/m/zack.png",
    "entries": [
     {
      "game": "HM1",
@@ -2117,7 +2117,7 @@
   {
    "name": "Oscar",
    "animal": "Mole",
-   "img": "img/m/oscar.gif",
+   "img": "img/m/oscar.png",
    "entries": [
     {
      "game": "HM1",
@@ -2137,7 +2137,7 @@
   {
    "name": "Rick",
    "animal": "Fox",
-   "img": "img/m/rick.gif",
+   "img": "img/m/rick.png",
    "entries": [
     {
      "game": "HM1",
@@ -2157,7 +2157,7 @@
   {
    "name": "Brandon",
    "animal": "Panther",
-   "img": "img/m/brandon.gif",
+   "img": "img/m/brandon.png",
    "entries": [
     {
      "game": "HM1",
@@ -2177,7 +2177,7 @@
   {
    "name": "Charlie",
    "animal": "Octopus",
-   "img": "img/m/charlie.gif",
+   "img": "img/m/charlie.png",
    "entries": [
     {
      "game": "HM1",
@@ -2197,7 +2197,7 @@
   {
    "name": "Louie",
    "animal": "Chameleon",
-   "img": "img/m/louie.gif",
+   "img": "img/m/louie.png",
    "entries": [
     {
      "game": "HM1",
@@ -2216,8 +2216,8 @@
   },
   {
    "name": "Phil",
-   "animal": "Fish/ ''To be more specific'' : Carp",
-   "img": "img/m/phil.gif",
+   "animal": "Fish (Carp)",
+   "img": "img/m/phil.png",
    "entries": [
     {
      "game": "HM1",
@@ -2237,7 +2237,7 @@
   {
    "name": "Nigel",
    "animal": "Bat",
-   "img": "img/m/nigel.gif",
+   "img": "img/m/nigel.png",
    "entries": [
     {
      "game": "HM1",
@@ -2257,7 +2257,7 @@
   {
    "name": "Earl",
    "animal": "Walrus",
-   "img": "img/m/earl.gif",
+   "img": "img/m/earl.png",
    "entries": [
     {
      "game": "HM1",
@@ -2277,7 +2277,7 @@
   {
    "name": "Jones",
    "animal": "Alligator",
-   "img": "img/m/jones.gif",
+   "img": "img/m/jones.png",
    "entries": [
     {
      "game": "HM1",
@@ -2297,7 +2297,7 @@
   {
    "name": "Carl",
    "animal": "Locust/Grasshopper",
-   "img": "img/m/carl.gif",
+   "img": "img/m/carl.png",
    "entries": [
     {
      "game": "HM1",
@@ -2317,7 +2317,7 @@
   {
    "name": "Jake",
    "animal": "Cobra",
-   "img": "img/m/jake.gif",
+   "img": "img/m/jake.png",
    "entries": [
     {
      "game": "HM1",
@@ -2343,7 +2343,7 @@
   {
    "name": "Richter",
    "animal": "Rat",
-   "img": "img/m/richter.gif",
+   "img": "img/m/richter.png",
    "entries": [
     {
      "game": "HM1",
@@ -2369,7 +2369,7 @@
   {
    "name": "Russell",
    "animal": "Bull",
-   "img": "img/m/russell.gif",
+   "img": "img/m/russell.png",
    "entries": [
     {
      "game": "HM1",
@@ -2449,6 +2449,21 @@
     }
    ],
    "wiki": "https://hotlinemiami.fandom.com/wiki/Dallas_Mask"
+  },
+  {
+   "name": "Pig Butcher",
+   "animal": "Pig",
+   "img": null,
+   "unconfirmed": true,
+   "entries": [
+    {
+     "game": "HM2",
+     "owner": "Martin Brown",
+     "ability": "Unknown (unconfirmed)",
+     "detail": "Listed among other usable masks on the wiki's Masks page. No source documents a perk; any ability is unconfirmed."
+    }
+   ],
+   "wiki": "https://hotlinemiami.fandom.com/wiki/Masks"
   }
  ],
  "weapons": [
@@ -2460,7 +2475,7 @@
     "HM2"
    ],
    "cut": false,
-   "img": "img/w/9mm.gif",
+   "img": "img/w/9mm.png",
    "desc": "If you are looking for the unusable Desert Eagle in Hotline Miami's finale, see Pistol. The 9mm is a weapon in Hotline Miami 2: Wrong Number. There is a silenced version of this weapon.",
    "notes": [
     {
@@ -2852,7 +2867,10 @@
    "id": "crossbow",
    "name": "Crossbow",
    "type": "Firearm",
-   "games": [],
+   "games": [
+    "HM1",
+    "HM2"
+   ],
    "cut": true,
    "img": "img/w/crossbow.png",
    "desc": "The Crossbow can be seen in Jacket's Final Chapter in a glass case next to the Trophy Weapon.",
@@ -3766,7 +3784,7 @@
     "HM2"
    ],
    "cut": false,
-   "img": "img/w/silenced-pistol.gif",
+   "img": "img/w/silenced-pistol.png",
    "desc": "The Silenced Pistol (Silencer internally) is a weapon in Hotline Miami and Hotline Miami 2: Wrong Number. It is a pistol fitted with a silencer, meaning enemies will be unable to hear it's gunshots.",
    "notes": [
     {
@@ -4367,13 +4385,10 @@
    "id": "minigun",
    "name": "Minigun",
    "type": "Firearm",
-   "games": [
-    "HM1",
-    "HM2"
-   ],
+   "games": [],
    "cut": true,
    "img": "img/w/minigun.png",
-   "desc": "The Minigun is a weapon seen in the Super Carnage prototype, and it can also be seen in Comic #5 of the Hotline Miami 2: Wrong Number Digital Comics, being used by Beard in the Hawaiian Conflict.",
+   "desc": "The Minigun is a weapon seen in the Super Carnage prototype, and it can also be seen in Comic #5 of the Hotline Miami 2: Wrong Number Digital Comics, being used by Beard in the Hawaiian Conflict. Prototype-only (Super Carnage); not usable in either released game.",
    "notes": [
     {
      "h": "Overview",
@@ -4447,6 +4462,30 @@
    },
    "aka": [],
    "wiki": "https://hotlinemiami.fandom.com/wiki/Plank"
+  },
+  {
+   "id": "nunchaku",
+   "name": "Nunchaku",
+   "type": "Melee",
+   "games": [
+    "HM2"
+   ],
+   "cut": false,
+   "img": null,
+   "desc": "The Nunchaku is a melee weapon exclusive to Hotline Miami 2: Wrong Number. Jake can use nunchucks while wearing the Dallas mask (Inner Warrior), which otherwise blocks picking up weapons.",
+   "notes": [
+    {
+     "h": "Overview",
+     "p": [
+      "Listed as a Hotline Miami 2 exclusive melee weapon on the wiki Weapons page."
+     ]
+    }
+   ],
+   "stats": {},
+   "aka": [
+    "Nunchucks"
+   ],
+   "wiki": "https://hotlinemiami.fandom.com/wiki/Weapons"
   }
  ]
 }

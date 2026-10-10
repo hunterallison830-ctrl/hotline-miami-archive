@@ -1,8 +1,8 @@
 const $=s=>document.querySelector(s);let D,tab='characters',game='all',sub='all',q='';
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 // wavy color-cycling title
-const t=$('#title');t.innerHTML=[...t.textContent].map((c,i)=>c===' '?'<span>&nbsp;</span>':`<span style="animation-delay:${i*-.09}s,${i*-.18}s">${c}</span>`).join('');
-let t0=Date.now();setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000);$('#clock').textContent=`SP ${Math.floor(s/3600)}:${String(Math.floor(s/60)%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`},1000);
+const t=$('#title');if(t)t.innerHTML=[...t.textContent].map((c,i)=>c===' '?'<span>&nbsp;</span>':`<span style="animation-delay:${i*-.09}s,${i*-.18}s">${c}</span>`).join('');
+let t0=Date.now();setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000);$('#clock')&&($('#clock').textContent=`SP ${Math.floor(s/3600)}:${String(Math.floor(s/60)%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`)},1000);
 const SUBS={characters:['all','Playable','Masked Figure','Boss','NPC'],masks:['all','HM1 Jacket','HM2'],weapons:['all','Melee','Firearm','Thrown','Cut/Beta']};
 const stCls=s=>s.startsWith('DEAD')?'dead':s==='ALIVE'?'alive':'unk';
 const stTxt=s=>s==='DEAD?'?'DEAD?':s;
@@ -19,6 +19,7 @@ function items(){
     if(q&&!JSON.stringify(x).toLowerCase().includes(q))return false;return true;});
 }
 function render(){
+  if(!$('#grid'))return;
   $('#subf').innerHTML=SUBS[tab].map(s=>`<button data-s="${s}" class="${s===sub?'on':''}">${s.toUpperCase()}</button>`).join('');
   const L=items();$('#count').textContent=`${L.length} / ${D[tab].length} ${tab.toUpperCase()} ON TAPE`;
   $('#grid').innerHTML=L.map((x,i)=>{
@@ -57,18 +58,19 @@ function open(i){
 function close(){$('#modal').hidden=true;document.body.style.overflow=''}
 $('#modal').addEventListener('click',e=>{if(e.target.id==='modal'||e.target.closest('.x'))close()});
 addEventListener('keydown',e=>{if(e.key==='Escape')close()});
-$('#grid').addEventListener('click',e=>{const c=e.target.closest('.card');if(c)open(+c.dataset.i)});
-$('#menu').addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;tab=b.dataset.tab;sub='all';document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('on',x===b));render()});
-$('#gamef').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;game=b.dataset.g;document.querySelectorAll('#gamef button').forEach(x=>x.classList.toggle('on',x===b));render()});
-$('#subf').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;sub=b.dataset.s;render()});
-$('#q').addEventListener('input',e=>{q=e.target.value.trim().toLowerCase();render()});
+$('#grid')?.addEventListener('click',e=>{const c=e.target.closest('.card');if(c)open(+c.dataset.i)});
+$('#menu')?.addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(!b)return;tab=b.dataset.tab;sub='all';document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('on',x===b));render()});
+$('#gamef')?.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;game=b.dataset.g;document.querySelectorAll('#gamef button').forEach(x=>x.classList.toggle('on',x===b));render()});
+$('#subf')?.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;sub=b.dataset.s;render()});
+$('#q')?.addEventListener('input',e=>{q=e.target.value.trim().toLowerCase();render()});
 // optional synth music (generated, no files)
-let ac,timer;$('#music').onclick=function(){
+let ac,timer;if($('#music'))$('#music').onclick=function(){
   if(timer){clearInterval(timer);timer=null;this.textContent='MUSIC: OFF';this.setAttribute('aria-pressed','false');return}
   ac=ac||new AudioContext();const notes=[57,60,64,67,69,67,64,60,53,57,60,64,55,59,62,67];let n=0;
   timer=setInterval(()=>{const o=ac.createOscillator(),g=ac.createGain(),f=ac.createBiquadFilter();o.type='sawtooth';o.frequency.value=440*2**((notes[n%16]-69)/12);f.type='lowpass';f.frequency.value=900+600*Math.sin(n/8);
     g.gain.setValueAtTime(.06,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.22);o.connect(f).connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+.25);n++},180);
   this.textContent='MUSIC: ON';this.setAttribute('aria-pressed','true')};
-fetch('data.json').then(r=>r.json()).then(d=>{D=d;const h=location.hash.slice(1);render();
+window.HM={open:(k,i)=>{tab=k;open(i)},close,isOpen:()=>!$('#modal').hidden};
+fetch('data.json').then(r=>r.json()).then(d=>{D=d;window.HM.D=d;window.dispatchEvent(new Event('hmdata'));const h=location.hash.slice(1);render();
   ['characters','masks','weapons'].forEach(k=>{const i=d[k].findIndex(x=>(x.id||x.name.toLowerCase())===h);if(i>=0){document.querySelector(`[data-tab=${k}]`).click();open(i)}})});
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
