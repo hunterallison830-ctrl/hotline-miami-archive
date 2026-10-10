@@ -1,11 +1,10 @@
 import * as THREE from 'three';
 import { createGlitchMaterial } from './shaders/glitch.js';
-import { createSmokeBackground } from './shaders/smoke.js';
+import { createSmokeBackground } from './shaders/smoke_v2.js';
 
 const $ = s => document.querySelector(s);
 const canvas = $('#gl');
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: devicePixelRatio < 1.5, alpha: false, powerPreference: 'high-performance' });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 const scene = new THREE.Scene(); scene.background = null;
 const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 100);
@@ -71,33 +70,45 @@ function cardCanvas(item, img, deck) {
   g.font = '18px "Press Start 2P"'; g.fillStyle = /DEAD/.test(tag) ? '#ff3b3b' : '#ffe14d'; g.fillText(tag.slice(0, 26), CW / 2, 650);
   return c;
 }
+// LRU texture cache: Map keeps insertion order; re-insert on use, evict oldest unused beyond TEX_MAX
+const TEX_MAX = 30;
+const ph = document.createElement('canvas'); ph.width = 64; ph.height = 88;
+{ const g = ph.getContext('2d'); g.fillStyle = '#12021f'; g.fillRect(0, 0, 64, 88); g.strokeStyle = '#ff2a8a'; g.lineWidth = 3; g.strokeRect(2, 2, 60, 84); g.fillStyle = '#2a0646'; g.fillRect(6, 6, 52, 52); }
+const placeholder = new THREE.CanvasTexture(ph); placeholder.colorSpace = THREE.SRGBColorSpace; placeholder.magFilter = THREE.NearestFilter; placeholder.minFilter = THREE.NearestFilter; placeholder.generateMipmaps = false;
+function pixelTex(tex) { tex.colorSpace = THREE.SRGBColorSpace; tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter; tex.generateMipmaps = false; return tex; }
 function getTexture(item, deck) {
   const key = deck + '|' + item.name;
-  if (texCache.has(key)) return texCache.get(key);
-  const blank = document.createElement('canvas'); blank.width = 4; blank.height = 4;
-  const tex = new THREE.CanvasTexture(cardCanvas(item, null, deck)); tex.colorSpace = THREE.SRGBColorSpace; tex.magFilter = THREE.NearestFilter; tex.minFilter = THREE.NearestFilter; tex.generateMipmaps = false;
+  if (texCache.has(key)) { const t = texCache.get(key); texCache.delete(key); texCache.set(key, t); return t; }
+  const tex = pixelTex(new THREE.CanvasTexture(cardCanvas(item, null, deck)));
   texCache.set(key, tex);
-  loadImg(item.img).then(img => { if (img) { tex.image = cardCanvas(item, img, deck); tex.needsUpdate = true; } });
+  loadImg(item.img).then(img => { if (img && texCache.get(key) === tex) { tex.image = cardCanvas(item, img, deck); tex.needsUpdate = true; } });
+  evict();
   return tex;
+}
+function evict() {
+  if (texCache.size <= TEX_MAX) return;
+  const inUse = new Set(pool.map(m => m.material.uniforms.uTex.value));
+  for (const [k, t] of texCache) { if (texCache.size <= TEX_MAX) break; if (!inUse.has(t)) { texCache.delete(k); t.dispose(); } }
 }
 
 // ---------- deck + card pool ----------
 const POOL = 17, cardGeo = new THREE.PlaneGeometry(1.6, 2.2, 8, 8);
 const pool = [];
 for (let i = 0; i < POOL; i++) {
-  const m = new THREE.Mesh(cardGeo, createGlitchMaterial(null)); m.visible = false; m.userData.idx = -1; scene.add(m); pool.push(m);
+  const m = new THREE.Mesh(cardGeo, createGlitchMaterial(placeholder)); m.visible = false; m.userData.idx = -1; m.userData.real = false; scene.add(m); pool.push(m);
 }
-let lastDir = 0;
+let lastDir = 0, wheelAcc = 0;
 let D, deckName = 'characters', deck = [], cur = 0, target = 0, vel = 0, smVel = 0, lastInput = 0, dragging = false;
+let jump = null, fade = 1, lastBase = -99;
 
 function setDeck(name) {
   deckName = name;
-  const src = name === 'dead' ? D.characters.map((x, i) => ({ x, i, k: 'characters' })).filter(o => o.x.status.startsWith('DEAD'))
+  deck = name === 'dead' ? D.characters.map((x, i) => ({ x, i, k: 'characters' })).filter(o => o.x.status.startsWith('DEAD'))
     : D[name].map((x, i) => ({ x, i, k: name }));
-  deck = src; cur = target = 0; smVel = 0;
+  cur = target = 0; smVel = 0; jump = null; lastBase = -99;
   document.querySelectorAll('#decks button').forEach(b => b.classList.toggle('on', b.dataset.deck === name));
   $('#ch').textContent = 'CH 0' + (['characters', 'masks', 'weapons', 'dead'].indexOf(name) + 1);
-  pool.forEach(m => { m.userData.idx = -1; m.visible = false; });
+  pool.forEach(m => { m.userData.idx = -1; m.userData.real = false; m.material.uniforms.uTex.value = placeholder; m.visible = false; });
   updateInfo(0, true);
 }
 let shownIdx = -1;
@@ -114,38 +125,45 @@ const openActive = () => { const o = deck[Math.round(cur)]; if (o) window.HM.ope
 // ---------- layout ----------
 let mobile = false;
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
-let L = {};
+const L = { active: V(0, 0, 0), hx: V(0, 0, 0), exit: V(0, 0, 0) };
 function layout() {
-  const w = innerWidth, h = innerHeight; mobile = w / h < 0.8 || w < 700;
+  const w = innerWidth, h = innerHeight; mobile = w / h < 0.95 || w < 700;
+  renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 1.5 : 2)); // re-applied on every resize (DPR changes across monitors)
   renderer.setSize(w, h, false); camera.aspect = w / h;
   camera.fov = mobile ? 70 : 62; camera.updateProjectionMatrix();
   const halfW = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 10 * camera.aspect;
-  if (mobile) L = { active: V(0, 0.9, 3.6), activeS: 1.55, activeRY: 0.08, hx: V(0, -1.2, -4.5), R: 2.6, step: 0.62, drop: 0.55, recede: 0.35, hs: 0.8, exit: V(-halfW * 1.9, 2.5, 1), helixRY: 0 };
-  else L = { active: V(-halfW * 0.2, -0.1, 2.2), activeS: 1.75, activeRY: 0.22, hx: V(halfW * 0.42, 2.9, -1.6), R: 2.8, step: 0.6, drop: 0.9, recede: 0.45, hs: 1.05, exit: V(-halfW * 1.6, -0.6, 0.5), helixRY: -0.35 };
+  if (mobile) { L.active.set(0, 0.9, 3.6); Object.assign(L, { activeS: 1.55, activeRY: 0.08, R: 2.6, step: 0.62, drop: 0.55, recede: 0.35, hs: 0.8, helixRY: 0 }); L.hx.set(0, -1.2, -4.5); L.exit.set(-halfW * 1.9, 2.5, 1); }
+  else { L.active.set(-halfW * 0.2, -0.1, 2.2); Object.assign(L, { activeS: 1.75, activeRY: 0.22, R: 2.8, step: 0.6, drop: 0.9, recede: 0.45, hs: 1.05, helixRY: -0.35 }); L.hx.set(halfW * 0.42, 2.9, -1.6); L.exit.set(-halfW * 1.6, -0.6, 0.5); }
   helixBG.position.x = mobile ? 0 : 0.8;
 }
-addEventListener('resize', layout);
+let rzPending = false;
+addEventListener('resize', () => { if (rzPending) return; rzPending = true; requestAnimationFrame(() => { rzPending = false; layout(); }); });
 
-function helixSlot(k, spin) { // k>=0 depth index
-  const a = k * L.step + spin;
-  const p = V(L.hx.x + Math.sin(a) * L.R, L.hx.y - k * L.drop, L.hx.z + (Math.cos(a) - 1) * L.R - k * L.recede);
-  return { p, ry: a + L.helixRY, s: Math.max(0.32, L.hs - k * 0.035), op: k > 9 ? Math.max(0, 1 - (k - 9) / 4) : 1, blur: Math.min(1, k * 0.12) };
+// scratch objects: no per-frame allocation
+const _p = new THREE.Vector3(), _h = new THREE.Vector3(), _c = new THREE.Vector3();
+const slot = { ry: 0, s: 1, op: 1, blur: 0 };
+function helixSlot(out, k) { // k>=0 depth index; writes position into out, other props into `slot`
+  const a = k * L.step;
+  out.set(L.hx.x + Math.sin(a) * L.R, L.hx.y - k * L.drop, L.hx.z + (Math.cos(a) - 1) * L.R - k * L.recede);
+  slot.ry = a + L.helixRY; slot.s = Math.max(0.32, L.hs - k * 0.035); slot.op = k > 9 ? Math.max(0, 1 - (k - 9) / 4) : 1; slot.blur = Math.min(1, k * 0.12);
+  return out;
 }
-const bez = (a, b, c, t) => a.clone().multiplyScalar((1 - t) ** 2).add(b.clone().multiplyScalar(2 * (1 - t) * t)).add(c.clone().multiplyScalar(t * t));
+function bezInto(out, a, b, c, t) { const u = 1 - t; return out.copy(a).multiplyScalar(u * u).addScaledVector(b, 2 * u * t).addScaledVector(c, t * t); }
 const ease = t => t < .5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
-function place(m, d, spin) {
-  let p, ry, s, op = 1, blur = 0, rz = 0;
-  if (d >= 1) { const h = helixSlot(d - 1, spin); p = h.p; ry = h.ry; s = h.s; op = h.op; blur = h.blur; }
+function place(m, d) {
+  let ry, s, op = 1, blur = 0, rz = 0;
+  if (d >= 1) { helixSlot(_p, d - 1); ry = slot.ry; s = slot.s; op = slot.op; blur = slot.blur; }
   else if (d >= 0) { // helix top -> active along bezier
-    const h = helixSlot(0, spin), t = ease(1 - d);
-    const ctrl = V((h.p.x + L.active.x) / 2, Math.max(h.p.y, L.active.y) + (mobile ? 1.2 : 2.2), L.active.z + 1.5);
-    p = bez(h.p, ctrl, L.active, t); ry = THREE.MathUtils.lerp(h.ry, L.activeRY, t); s = THREE.MathUtils.lerp(h.s, L.activeS, t);
+    helixSlot(_h, 0); const t = ease(1 - d);
+    _c.set((_h.x + L.active.x) / 2, Math.max(_h.y, L.active.y) + (mobile ? 1.2 : 2.2), L.active.z + 1.5);
+    bezInto(_p, _h, _c, L.active, t); ry = THREE.MathUtils.lerp(slot.ry, L.activeRY, t); s = THREE.MathUtils.lerp(slot.s, L.activeS, t);
     rz = Math.sin(t * Math.PI) * 0.18;
   } else { // active -> exit left
     const t = Math.min(1, -d), te = t * t;
-    p = L.active.clone().lerp(L.exit, te); ry = L.activeRY + te * 0.9; s = THREE.MathUtils.lerp(L.activeS, 0.6, te); op = 1 - t; rz = te * 0.3;
+    _p.copy(L.active).lerp(L.exit, te); ry = L.activeRY + te * 0.9; s = THREE.MathUtils.lerp(L.activeS, 0.6, te); op = 1 - t; rz = te * 0.3;
   }
-  m.position.copy(p); m.rotation.set(0, ry, rz); m.scale.setScalar(s);
+  op *= fade;
+  m.position.copy(_p); m.rotation.set(0, ry, rz); m.scale.setScalar(s);
   const u = m.material.uniforms; u.uOpacity.value = op; if (u.uBlur) u.uBlur.value = blur;
   m.renderOrder = Math.round(100 - d * 4);
   m.visible = op > 0.01;
@@ -153,9 +171,23 @@ function place(m, d, spin) {
 
 // ---------- input ----------
 const clampT = v => Math.max(0, Math.min(deck.length - 1, v));
-addEventListener('wheel', e => { if (window.HM.isOpen()) return; e.preventDefault(); const dd = (e.deltaY + e.deltaX) * (e.deltaMode ? 0.12 : 0.0035); lastDir = Math.sign(dd); target = clampT(target + dd); lastInput = performance.now(); }, { passive: false });
+const JUMP_MS = 750, FADE_JUMP = 20;
+function jumpTo(i) {
+  i = clampT(Math.round(i)); lastInput = performance.now(); lastDir = 0;
+  if (Math.abs(i - cur) < 3) { jump = null; target = i; return; }   // short hops keep the damped feel
+  jump = { from: cur, to: i, t0: performance.now(), dur: JUMP_MS, xfade: Math.abs(i - cur) > FADE_JUMP };
+  target = i;
+}
+// wheel: mouse notches (|delta|>=50) move exactly 1 card; trackpads accumulate small deltas into whole cards
+addEventListener('wheel', e => {
+  if (window.HM.isOpen()) return; e.preventDefault(); if (jump) return;
+  let d = (e.deltaY + e.deltaX) * (e.deltaMode === 1 ? 33 : e.deltaMode === 2 ? 400 : 1);
+  if (Math.abs(d) >= 50) { const s = Math.sign(d); target = clampT(Math.round(target) + s); lastDir = s; wheelAcc = 0; }
+  else { wheelAcc += d * 0.012; const step = Math.max(-1, Math.min(1, wheelAcc)); target = clampT(target + step); wheelAcc -= step; lastDir = Math.sign(step) || lastDir; }
+  lastInput = performance.now();
+}, { passive: false });
 let ty = 0, tx = 0, tStart = 0, moved = 0;
-canvas.addEventListener('pointerdown', e => { dragging = true; ty = e.clientY; tx = e.clientX; tStart = target; moved = 0; canvas.setPointerCapture(e.pointerId); });
+canvas.addEventListener('pointerdown', e => { dragging = true; jump = null; ty = e.clientY; tx = e.clientX; tStart = target = cur; moved = 0; canvas.setPointerCapture(e.pointerId); });
 canvas.addEventListener('pointermove', e => {
   if (!dragging) return; const dy = ty - e.clientY, dx = tx - e.clientX; moved = Math.max(moved, Math.hypot(dx, dy));
   const nt = clampT(tStart + (mobile ? (dy + dx * 0.6) : dy) * (mobile ? 0.012 : 0.008)); lastDir = Math.sign(nt - target) || lastDir; target = nt; lastInput = performance.now();
@@ -163,43 +195,73 @@ canvas.addEventListener('pointermove', e => {
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
 canvas.addEventListener('pointerup', () => { dragging = false; lastInput = performance.now(); });
 canvas.addEventListener('pointercancel', () => { dragging = false; });
-// use click (fires after pointerup) so the synthetic click can't land on the freshly opened modal backdrop
+// click (fires after pointerup) so the synthetic click can't land on the freshly opened modal backdrop
 canvas.addEventListener('click', e => {
   if (moved >= 8) return;
   ndc.set(e.clientX / innerWidth * 2 - 1, -(e.clientY / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera);
   const hits = ray.intersectObjects(pool.filter(m => m.visible && m.material.uniforms.uOpacity.value > 0.3));
-  if (hits.length) { const idx = hits[0].object.userData.idx; if (idx === Math.round(cur)) openActive(); else { target = idx; lastInput = performance.now(); } }
+  if (hits.length) { const idx = hits[0].object.userData.idx; if (idx === Math.round(cur)) openActive(); else jumpTo(idx); }
 });
 addEventListener('keydown', e => {
   if (window.HM.isOpen()) return;
-  if (['ArrowDown', 'ArrowRight', 'PageDown', 'j'].includes(e.key)) { target = clampT(Math.round(target) + 1); e.preventDefault(); }
-  else if (['ArrowUp', 'ArrowLeft', 'PageUp', 'k'].includes(e.key)) { target = clampT(Math.round(target) - 1); e.preventDefault(); }
-  else if (e.key === 'Home') target = 0; else if (e.key === 'End') target = deck.length - 1;
+  const base = jump ? jump.to : Math.round(target);
+  if (['ArrowDown', 'ArrowRight', 'PageDown', 'j'].includes(e.key)) { jumpTo(base + (e.key === 'PageDown' ? 5 : 1)); e.preventDefault(); }
+  else if (['ArrowUp', 'ArrowLeft', 'PageUp', 'k'].includes(e.key)) { jumpTo(base - (e.key === 'PageUp' ? 5 : 1)); e.preventDefault(); }
+  else if (e.key === 'Home') jumpTo(0); else if (e.key === 'End') jumpTo(deck.length - 1);
   else if (e.key === 'Enter' || e.key === ' ') { openActive(); e.preventDefault(); }
-  lastInput = performance.now();
 });
 $('#decks').addEventListener('click', e => { const b = e.target.closest('[data-deck]'); if (b) setDeck(b.dataset.deck); });
 $('#hxOpen').addEventListener('click', openActive);
-window.HX = { pick: (x, y) => { ndc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera); return ray.intersectObjects(pool.filter(m => m.visible)).map(h => [h.object.userData.idx, +h.distance.toFixed(2), +h.object.material.uniforms.uOpacity.value.toFixed(2)]); }, go: i => { target = clampT(i); }, scrollBy: d => { target = clampT(target + d); lastInput = performance.now(); }, state: () => ({ cur, target, vel: smVel, n: deck.length }) };
+window.HX = {
+  pick: (x, y) => { ndc.set(x / innerWidth * 2 - 1, -(y / innerHeight) * 2 + 1); ray.setFromCamera(ndc, camera); return ray.intersectObjects(pool.filter(m => m.visible)).map(h => [h.object.userData.idx, +h.distance.toFixed(2)]); },
+  go: jumpTo, scrollBy: d => { target = clampT(target + d); lastInput = performance.now(); },
+  state: () => ({ cur, target, vel: smVel, n: deck.length, jumping: !!jump, textures: texCache.size, dpr: renderer.getPixelRatio() })
+};
 
 // ---------- loop ----------
 const clock = new THREE.Clock();
+const VCAP = 0.75, CARDS_PER_SEC_MAX = 12;
+function assignPool(base) {
+  for (const m of pool) { const i = m.userData.idx; if (i < base - 1 || i > base + POOL - 2) { m.userData.idx = -1; m.visible = false; } }
+  for (let j = -1; j < POOL - 1; j++) {
+    const i = base + j; if (i < 0 || i >= deck.length) continue;
+    let has = false; for (const m of pool) if (m.userData.idx === i) { has = true; break; }
+    if (has) continue;
+    for (const m of pool) if (m.userData.idx === -1) { m.userData.idx = i; m.userData.real = false; m.material.uniforms.uTex.value = placeholder; break; }
+  }
+}
 function frame() {
-  const t = clock.getElapsedTime(), dt = Math.min(clock.getDelta() || 0.016, 0.05);
-  if (!dragging && performance.now() - lastInput > 140) { // snap, biased in the direction of travel so small flicks still advance
-    const snapTo = clampT(lastDir > 0 ? Math.ceil(target - 0.2) : lastDir < 0 ? Math.floor(target + 0.2) : Math.round(target));
-    target += (snapTo - target) * 0.18; if (Math.abs(snapTo - target) < 0.001) { target = snapTo; lastDir = 0; } }
-  const prev = cur; cur += (target - cur) * (1 - Math.pow(0.0009, dt)); // damped
-  if (Math.abs(target - cur) < 0.0005) cur = target;
-  vel = (cur - prev) / Math.max(dt, 0.008); smVel += (Math.min(Math.abs(vel) * 0.35, 1.2) - smVel) * 0.15;
-  const base = Math.floor(cur), spin = -cur * L.step * 0.0; // helix spin is per-slot; whole helix rotates via d
-  // assign pool window: idx from base-1 .. base+POOL-2
-  const want = new Set(); for (let j = -1; j < POOL - 1; j++) { const i = base + j; if (i >= 0 && i < deck.length) want.add(i); }
-  const free = pool.filter(m => !want.has(m.userData.idx)); const have = new Set(pool.map(m => m.userData.idx));
-  for (const i of want) if (!have.has(i)) { const m = free.pop(); if (!m) break; m.userData.idx = i; m.material.uniforms.uTex.value = getTexture(deck[i].x, deckName); }
+  const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
+  const prev = cur;
+  if (jump) {
+    const k = Math.min(1, (performance.now() - jump.t0) / jump.dur);
+    if (jump.xfade) { // long jump: fade out, cut, fade in
+      fade = k < 0.4 ? 1 - k / 0.4 : k > 0.6 ? (k - 0.6) / 0.4 : 0;
+      cur = k < 0.5 ? jump.from : jump.to;
+    } else cur = jump.from + (jump.to - jump.from) * ease(k);
+    if (k >= 1) { cur = target = jump.to; jump = null; fade = 1; }
+  } else {
+    if (!dragging && performance.now() - lastInput > 140) { // snap, biased in the direction of travel
+      const snapTo = clampT(lastDir > 0 ? Math.ceil(target - 0.2) : lastDir < 0 ? Math.floor(target + 0.2) : Math.round(target));
+      target += (snapTo - target) * (1 - Math.exp(-12 * dt)); if (Math.abs(snapTo - target) < 0.001) { target = snapTo; lastDir = 0; }
+    }
+    cur += (target - cur) * (1 - Math.exp(-7 * dt));
+    if (Math.abs(target - cur) < 0.0005) cur = target;
+  }
+  vel = (cur - prev) / Math.max(dt, 1e-3);                                  // cards per second
+  const vT = (jump && jump.xfade) ? 0.35 : Math.min(Math.abs(vel) / CARDS_PER_SEC_MAX, VCAP);
+  smVel += (vT - smVel) * (1 - Math.exp(-10 * dt));
+  const base = Math.floor(cur);
+  if (base !== lastBase) { lastBase = base; assignPool(base); }
+  // textures: none while jumping; afterwards build at most one per frame, nearest-to-active first
+  if (!jump && Math.abs(vel) < 2) {
+    let best = null, bd = 1e9;
+    for (const m of pool) { if (m.userData.idx < 0 || m.userData.real) continue; const d = Math.abs(m.userData.idx - cur); if (d < bd) { bd = d; best = m; } }
+    if (best) { best.material.uniforms.uTex.value = getTexture(deck[best.userData.idx].x, deckName); best.userData.real = true; }
+  }
   for (const m of pool) {
-    const i = m.userData.idx; if (i < 0 || !want.has(i)) { m.visible = false; continue; }
-    const d = i - cur; place(m, d, (d >= 1 ? 0 : 0) - (cur % 1) * 0); // helix rotates as d decreases
+    const i = m.userData.idx; if (i < 0) { m.visible = false; continue; }
+    place(m, i - cur);
     m.material.uniforms.uTime.value = t; m.material.uniforms.uVelocity.value = smVel;
   }
   updateInfo(Math.round(cur));
@@ -213,6 +275,6 @@ async function start(d) {
   const sp = [...document.querySelectorAll('#title span')].find(x => x.innerHTML === '&nbsp;'); if (sp) sp.outerHTML = '<br>';
   try { await Promise.race([document.fonts.load('30px "Press Start 2P"'), new Promise(r => setTimeout(r, 2500))]); } catch (e) {}
   const h = location.hash.slice(1); setDeck(['characters', 'masks', 'weapons', 'dead'].includes(h) ? h : 'characters');
-  $('#loading').classList.add('done'); requestAnimationFrame(frame);
+  $('#loading').classList.add('done'); clock.getDelta(); requestAnimationFrame(frame);
 }
 if (window.HM && window.HM.D) start(window.HM.D); else addEventListener('hmdata', () => start(window.HM.D), { once: true });
