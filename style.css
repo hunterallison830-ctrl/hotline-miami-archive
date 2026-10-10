@@ -111,3 +111,16 @@ body:has(.modal:not([hidden])) .spiral-wrap{display:none}
  body:not(.helix-page){padding-bottom:120px}
 }
 @media(prefers-reduced-motion:reduce){.play-btn,.pb-ico{animation:none}}
+/* phone dock: opaque backing strip, 44px PLAY tap target; compact in landscape so the hero quote stays visible */
+@media (max-width:600px),(max-height:500px) and (pointer:coarse){
+ .spiral-wrap{background:linear-gradient(0deg,#0b0216 75%,#0b0216e6);padding:6px 8px calc(6px + env(safe-area-inset-bottom));left:0;right:0;bottom:0;border-top:2px solid #ff2a8a66}
+ .play-btn{min-height:44px;box-sizing:border-box;padding:0 18px}
+}
+@media (max-height:500px) and (pointer:coarse) and (orientation:landscape){
+ .spiral-wrap{gap:4px;padding-top:4px;padding-bottom:calc(4px + env(safe-area-inset-bottom))}
+ .play-btn{font-size:10px}
+ .spiral-wrap .spiral-btn{padding:2px 12px;min-height:32px;box-sizing:border-box;align-self:center;width:min(460px,100%)}
+ .spiral-txt{font-size:16px}.spiral-ico{width:16px;height:24px}
+ .hero{padding-top:48px;padding-bottom:0}.hero .pre{margin:0}.hero .title{font-size:46px;margin:6px 0}.hero .sub{margin:4px 0}.hero .quote{margin:4px 0;font-size:20px}
+ body:not(.helix-page){padding-bottom:96px}
+}

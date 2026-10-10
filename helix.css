@@ -66,3 +66,29 @@ body.fx-shake #gl{animation:fxShake .38s steps(5)}
 @media (max-width:700px){.fx-sprite{width:72px;height:72px;margin:-36px 0 0 -36px}.fx-text.pts{font-size:16px}.fx-text.kill{font-size:24px}.fx-text.combo{font-size:26px}.fx-phone p{font-size:26px}}
 .hx-play{display:block;width:max-content;margin-top:8px;border-color:var(--yel);color:var(--yel)}.hx-play:hover{background:var(--yel)}
 @media (max-aspect-ratio:19/20),(max-width:700px){.hx-grid.hx-play{top:78px;margin:0}}
+
+/* phone ergonomics: 44px tap targets, >=10px labels, taller bottom bar, notch-safe OSD */
+@media (max-aspect-ratio:19/20),(max-width:700px){
+ .hx-decks button{font-size:10px;min-height:44px;padding:0 4px;letter-spacing:-1px}
+ .hx-open,.hx-grid{min-height:44px;font-size:10px;display:inline-flex;align-items:center;box-sizing:border-box}
+ #hxIdx{font-size:10px}
+ .hx-menu{padding-top:12px;padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+ .hx-grid.hx-play{top:100px}
+}
+@media (max-height:500px) and (min-aspect-ratio:19/20){
+ .hx-decks button{font-size:10px;min-height:44px;padding:0 8px}
+ .hx-open,.hx-grid{min-height:44px;font-size:10px;display:inline-flex;align-items:center;box-sizing:border-box}
+ .hx-menu{top:max(36px,env(safe-area-inset-top));overflow-y:auto;max-height:calc(100dvh - 40px)}
+ .hx-info{padding:4px 8px}#hxIdx{font-size:10px}#hxName{margin:3px 0}
+ .hx-decks{gap:0}
+}
+.vhs-osd{top:max(12px,env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left))}
+.vhs-osd.right{left:auto;right:max(16px,env(safe-area-inset-right))}
+@media (max-height:500px) and (min-aspect-ratio:19/20){
+ .hx-menu{width:250px}
+ .hx-decks{display:grid;grid-template-columns:1fr 1fr;gap:2px;align-items:stretch}
+ .hx-decks button{padding:0 2px;letter-spacing:-1px;text-align:left}
+ .hx-info{margin-top:4px}
+ .hx-grid{white-space:nowrap;margin-top:4px;padding:0 8px}
+ .hx-grid.hx-play{margin-top:4px}
+}

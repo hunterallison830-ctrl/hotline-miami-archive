@@ -232,13 +232,25 @@ addEventListener('wheel', e => {
   lastInput = performance.now();
 }, { passive: false });
 let ty = 0, tx = 0, tStart = 0, moved = 0;
-canvas.addEventListener('pointerdown', e => { dragging = true; jump = null; ty = e.clientY; tx = e.clientX; tStart = target = cur; moved = 0; canvas.setPointerCapture(e.pointerId); });
+let axis = null, samples = [];
+canvas.addEventListener('pointerdown', e => { axis = null; samples = [{ t: performance.now(), v: cur }]; dragging = true; jump = null; ty = e.clientY; tx = e.clientX; tStart = target = cur; moved = 0; canvas.setPointerCapture(e.pointerId); });
 canvas.addEventListener('pointermove', e => {
   if (!dragging) return; const dy = ty - e.clientY, dx = tx - e.clientX; moved = Math.max(moved, Math.hypot(dx, dy));
-  const nt = clampT(tStart + (mobile ? (dy + dx * 0.6) : dy) * (mobile ? 0.012 : 0.008)); lastDir = Math.sign(nt - target) || lastDir; target = nt; lastInput = performance.now();
+  if (!axis && moved > 10) axis = Math.abs(dx) > Math.abs(dy) ? 'x' : 'y';          // lock direction after 10px; swipe left/up = next card
+  const d = axis === 'x' ? dx : axis === 'y' ? dy : (Math.abs(dx) > Math.abs(dy) ? dx : dy);
+  const nt = clampT(tStart + d * (mobile ? 0.012 : 0.008));
+  const now = performance.now(); samples.push({ t: now, v: nt }); while (samples.length > 2 && now - samples[0].t > 80) samples.shift(); lastDir = Math.sign(nt - target) || lastDir; target = nt; lastInput = performance.now();
 });
 const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
-canvas.addEventListener('pointerup', () => { dragging = false; lastInput = performance.now(); });
+canvas.addEventListener('pointerup', () => {
+  dragging = false; const now = performance.now(); lastInput = now;
+  // velocity-aware flick: speed over the last ~80ms throws extra cards (capped), then the snap rounds it
+  const a = samples[0], b = samples[samples.length - 1];
+  if (a && b && b.t - a.t > 8 && now - b.t < 100) { const v = (b.v - a.v) / ((b.t - a.t) / 1000);
+    if (Math.abs(v) > 1.5) { target = clampT(target + Math.max(-8, Math.min(8, v * 0.25))); lastDir = Math.sign(v); } else lastDir = 0; }
+  else lastDir = 0;
+  samples = [];
+});
 canvas.addEventListener('pointercancel', () => { dragging = false; });
 // click (fires after pointerup) so the synthetic click can't land on the freshly opened modal backdrop
 canvas.addEventListener('click', e => {
@@ -266,7 +278,8 @@ window.HX = {
 
 const fx = createFX($('#fx'), () => D);
 // ---------- loop ----------
-const clock = new THREE.Clock();
+const clock = new THREE.Clock(); let settleT = 0;
+document.addEventListener('visibilitychange', () => { if (!document.hidden) clock.getDelta(); }); // no dt spike on return
 const VCAP = 0.75, CARDS_PER_SEC_MAX = 12;
 function assignPool(base) {
   for (const m of pool) { const i = m.userData.idx; if (i < base - 1 || i > base + POOL - 2) { m.userData.idx = -1; m.visible = false; } }
@@ -289,7 +302,7 @@ function frame() {
     if (k >= 1) { cur = target = jump.to; jump = null; fade = 1; }
   } else {
     if (!dragging && performance.now() - lastInput > 140) { // snap, biased in the direction of travel
-      const snapTo = clampT(lastDir > 0 ? Math.ceil(target - 0.2) : lastDir < 0 ? Math.floor(target + 0.2) : Math.round(target));
+      const snapTo = clampT(lastDir > 0 ? Math.ceil(target - 0.35) : lastDir < 0 ? Math.floor(target + 0.35) : Math.round(target));
       target += (snapTo - target) * (1 - Math.exp(-12 * dt)); if (Math.abs(snapTo - target) < 0.001) { target = snapTo; lastDir = 0; }
     }
     cur += (target - cur) * (1 - Math.exp(-7 * dt));
@@ -314,6 +327,9 @@ function frame() {
   updateInfo(Math.round(cur));
   updateHelixBG(t, dt, jump && jump.xfade ? 0 : vel);
   fx.update(t, dt, cur, jump && jump.xfade ? 0 : vel);
+  // cheaper frames while moving on phones: drop DPR to 1 during drags/flings, restore once settled
+  const busy = dragging || Math.abs(target - cur) > 0.05 || !!jump;
+  if (mobile) { const want = busy ? 1 : Math.min(devicePixelRatio, 1.5); if (busy) settleT = t; if (want !== renderer.getPixelRatio() && (busy || t - settleT > 0.3)) renderer.setPixelRatio(want); }
   smoke.update(t);
   renderer.render(scene, camera);
   requestAnimationFrame(frame);

@@ -14,11 +14,19 @@ html,body{margin:0;height:100%;background:#0b0216;overflow:hidden;touch-action:n
 .touch{position:fixed;inset:0;z-index:8;display:none}
 body.is-touch .touch{display:block}
 .tbtn{position:absolute;right:calc(18px + env(safe-area-inset-right));bottom:calc(150px + env(safe-area-inset-bottom));width:74px;height:74px;border-radius:50%;border:3px solid #ffe14d;background:#ffe14d22;color:#ffe14d;font:9px 'Press Start 2P';display:grid;place-items:center;box-shadow:0 0 14px #ffe14d88}
-.tbtn.r{bottom:auto;top:calc(56px + env(safe-area-inset-top));border-color:#16f4ff;color:#16f4ff;background:#16f4ff22;box-shadow:0 0 14px #16f4ff88;width:56px;height:56px}
+.tbtn.r{bottom:auto;right:calc(10px + env(safe-area-inset-right));top:calc(10px + env(safe-area-inset-top));font-size:11px;border-color:#16f4ff;color:#16f4ff;background:#16f4ff22;box-shadow:0 0 14px #16f4ff88;width:56px;height:56px}
+.tbtn.pw{bottom:calc(236px + env(safe-area-inset-bottom));width:84px;height:84px;font-size:10px;color:#fff;border-color:#ff2a8a;background:conic-gradient(#ff2a8a99 var(--p,0%),#0008 0);box-shadow:0 0 10px #ff2a8a88;opacity:.75}
+.tbtn.pw[data-st=ready]{opacity:1;border-color:#fff;background:#16f4ff55;animation:pwThrob .5s ease-in-out infinite alternate}
+.tbtn.pw[data-st=on]{opacity:1;border-color:#fff;background:conic-gradient(#ffffffaa var(--p,0%),#0008 0);box-shadow:0 0 24px #16f4ff}
+@keyframes pwThrob{from{transform:scale(1);box-shadow:0 0 14px #16f4ff}to{transform:scale(1.12);box-shadow:0 0 36px #fff,0 0 60px #16f4ff}}
+@media (max-height:420px){.tbtn{bottom:calc(20px + env(safe-area-inset-bottom))}.tbtn.pw{bottom:calc(104px + env(safe-area-inset-bottom));width:76px;height:76px}}
+.tbtn.r{width:46px;height:46px}.tbtn.p{right:calc(64px + env(safe-area-inset-right))}
+.tbtn.r.arm{background:#ff2a8a;color:#000;border-color:#fff;animation:pwThrob .3s infinite alternate}
+body[data-mode=select] .tbtn,body[data-mode=results] .tbtn:not(#tR),body[data-mode=paused] .tbtn{display:none}
 </style></head><body>
 <canvas id="c" aria-label="Mini-game canvas. WASD to move, mouse to aim, click to attack, right-click or Space to throw or pick up, R to restart."></canvas>
 <div class="vig"></div><div class="scan"></div>
 <a class="back" href="index.html">◂ ARCHIVE</a>
-<div class="touch" id="touch"><div class="tbtn" id="tThrow">THROW</div><div class="tbtn r" id="tR">R</div></div>
+<div class="touch" id="touch"><div class="tbtn pw" id="tPow">POWER</div><div class="tbtn" id="tThrow">THROW</div><div class="tbtn r" id="tR" aria-label="Restart (tap twice)">R</div><div class="tbtn r p" id="tP" aria-label="Pause">II</div></div>
 <script src="game.js"></script>
 </body></html>

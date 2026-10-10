@@ -29,7 +29,7 @@ const solidAt = (x, y) => wall(Math.floor(x / TS), Math.floor(y / TS));
 const T = (tx, ty) => ({ x: tx * TS + TS / 2, y: ty * TS + TS / 2 });
 const CAR = T(4, 15.5);
 const MASKS = [
-  { id: 'richard', name: 'RICHARD', perk: 'NO PERK. PURE SKILL.', img: 'img/m/richard.png', mult: 1.25 },
+  { id: 'richard', name: 'RICHARD', perk: 'NO PERK. +25% SCORE', img: 'img/m/richard.png', mult: 1.25 },
   { id: 'tony', name: 'TONY', perk: 'FISTS ARE LETHAL', img: 'img/m/tony.png', mult: 1 },
   { id: 'rasmus', name: 'RASMUS', perk: 'MOVE 25% FASTER', img: 'img/m/rasmus.png', mult: 1 },
 ];
@@ -50,32 +50,45 @@ let W = 0, H = 0, DPR = 1, zoom = 1;
 let S = null, mode = 'select', maskSel = 0, best = +localStorage.getItem('hm_nightcall_best') || 0, bestGrade = localStorage.getItem('hm_nightcall_grade') || '';
 const keys = new Set(), mouse = { x: 0, y: 0, down: false };
 const touch = { on: false, move: null, aim: null, mv: { x: 0, y: 0 }, av: { x: 0, y: 0 }, fire: false };
+const QS = new URLSearchParams(location.search), DBG_PW = QS.get('pw') === '1'; // test-only: start with a full meter
+const PW_DUR = 15, PW_PER_COMBO = 1 / 15; // 1+2+3+4+5 = 15 combo-steps fills it
+const reach = () => (S.p.wpn ? 44 : 33) * (S.pwOn > 0 ? 1.3 : 1);   // ~+10% base melee reach, +30% powered
+const pspeed = () => (S.mask.id === 'rasmus' ? 215 : 172) * (S.pwOn > 0 ? 1.25 : 1);
+function activatePower() {
+  if (!S || mode !== 'play' || S.p.dead || S.won || S.pwOn > 0 || S.pw < 1) return;
+  S.pwOn = PW_DUR; S.hp = 2; S.dil = 0.6; S.shake = 16; pop(S.p.x, S.p.y - 34, 'POWER UP!', '#fff', true);
+}
 function newRun() {
   const m = MASKS[maskSel];
   S = {
     mask: m, t: 0, p: { x: CAR.x + 40, y: CAR.y - 4, a: -Math.PI / 2, wpn: m.id === 'tony' ? null : 'bat', ammo: 0, dead: false, swing: 0, cd: 0, r: 10 },
     en: ENEMY_DEFS.map(([tx, ty, w, path]) => ({ ...T(tx, ty), a: 0, w, path: path.map(([a, b]) => T(a, b)), pi: 0, st: 'patrol', stun: 0, seen: 0, cd: 0, last: null, r: 10, dead: false, swing: 0 })),
     items: [], bullets: [], decals: [], pops: [], parts: [],
-    score: 0, kills: 0, combo: 0, comboT: 0, maxCombo: 0, shake: 0, clear: false, won: false, endT: 0, cam: { x: CAR.x, y: CAR.y },
+    pw: DBG_PW ? 1 : 0, embA: 0, smears: [], lastSm: null, pwOn: 0, hp: 0, inv: 0, dil: 0, trail: [], aura: [], score: 0, kills: 0, combo: 0, comboT: 0, maxCombo: 0, shake: 0, clear: false, won: false, endT: 0, cam: { x: CAR.x, y: CAR.y },
   };
-  mode = 'play';
+  mode = 'play'; setModeClass(); rArm = -1e9;
 }
 // ---------- input ----------
 addEventListener('keydown', e => {
   const k = e.key.toLowerCase(); keys.add(k);
+  if ((k === 'q' || k === 'shift') && mode === 'play') { activatePower(); e.preventDefault(); return; }
   if (mode === 'select') { if (['1', '2', '3'].includes(k)) maskSel = +k - 1; if (k === 'arrowleft' || k === 'a') maskSel = (maskSel + 2) % 3; if (k === 'arrowright' || k === 'd') maskSel = (maskSel + 1) % 3; if (k === 'enter' || k === ' ') { newRun(); e.preventDefault(); } return; }
+  if (mode === 'paused') { if (k === 'escape' || k === 'p' || k === 'enter') resume(); else if (k === 'r') newRun(); else if (k === 'q' || k === 'm') quitToSelect(); return; }
+  if (k === 'escape' || k === 'p') { if (mode === 'play') pause(); return; }
   if (k === 'r') { newRun(); }
-  if (k === 'escape' || k === 'm') { mode = 'select'; }
+  if (k === 'm' && mode === 'results') { quitToSelect(); }
   if (k === ' ' || k === 'e') { if (mode === 'play') throwOrPick(); e.preventDefault(); }
   if (mode === 'results' && k === 'enter') newRun();
 });
 addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
-addEventListener('blur', () => { keys.clear(); mouse.down = false; });
+addEventListener('blur', () => { keys.clear(); mouse.down = false; if (mode === 'play' && S && !S.p.dead && !S.won) pause(); });
+function pause() { if (mode !== 'play') return; mode = 'paused'; keys.clear(); mouse.down = false; touch.move = touch.aim = null; setModeClass(); }
+function resume() { mode = 'play'; last = performance.now(); setModeClass(); }
+function quitToSelect() { mode = 'select'; setModeClass(); }
 cv.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
 cv.addEventListener('mousedown', e => {
   mouse.x = e.clientX; mouse.y = e.clientY;
-  if (mode === 'select') { const i = selectHit(e.clientX, e.clientY); if (i >= 0) { if (i === maskSel) newRun(); else maskSel = i; } return; }
-  if (mode === 'results') { newRun(); return; }
+  if (mode !== 'play') return; // menus are handled by the pointerdown handler below
   if (e.button === 2) { throwOrPick(); return; }
   mouse.down = true;
 });
@@ -83,13 +96,26 @@ addEventListener('mouseup', () => { mouse.down = false; });
 cv.addEventListener('contextmenu', e => e.preventDefault());
 // twin-stick touch
 const tl = document.getElementById('touch');
-const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
-if (isTouch) document.body.classList.add('is-touch');
+// input mode follows the last real input: touch shows the twin-stick overlay, mouse/pen hides it (touch laptops, 2-in-1s)
+let isTouch = false;
+function setTouchMode(on) { if (on === isTouch) return; isTouch = on; document.body.classList.toggle('is-touch', on); if (!on) { touch.move = touch.aim = null; } }
+addEventListener('pointerdown', e => setTouchMode(e.pointerType === 'touch'), true);
+addEventListener('pointermove', e => { if (e.pointerType === 'mouse' && (e.movementX || e.movementY)) setTouchMode(false); }, true);
+addEventListener('touchstart', () => setTouchMode(true), { capture: true, passive: true });
+// menu taps/clicks (any pointer type), wherever the event lands except real buttons/links
+addEventListener('pointerdown', e => {
+  if (e.target.closest && e.target.closest('.tbtn,a')) return;
+  if (mode === 'select') { const i = selectHit(e.clientX, e.clientY); if (i >= 0) { if (i === maskSel) newRun(); else maskSel = i; } }
+  else if (mode === 'paused') pauseHit(e.clientX, e.clientY);
+  else if (mode === 'results') newRun();
+  else return;
+  e.preventDefault();
+});
+function setModeClass() { document.body.dataset.mode = mode; }
 tl.addEventListener('touchstart', e => {
   if (e.target.closest('.tbtn')) return; e.preventDefault();
   for (const t of e.changedTouches) {
-    if (mode === 'select') { const i = selectHit(t.clientX, t.clientY); if (i >= 0) { if (i === maskSel) newRun(); else maskSel = i; } return; }
-    if (mode === 'results') { newRun(); return; }
+    if (mode !== 'play') return;
     if (t.clientX < innerWidth / 2 && !touch.move) touch.move = { id: t.identifier, x: t.clientX, y: t.clientY, cx: t.clientX, cy: t.clientY };
     else if (!touch.aim) touch.aim = { id: t.identifier, x: t.clientX, y: t.clientY, cx: t.clientX, cy: t.clientY };
   }
@@ -100,8 +126,13 @@ tl.addEventListener('touchmove', e => {
 }, { passive: false });
 const tend = e => { for (const t of e.changedTouches) { if (touch.move && touch.move.id === t.identifier) touch.move = null; if (touch.aim && touch.aim.id === t.identifier) touch.aim = null; } };
 tl.addEventListener('touchend', tend); tl.addEventListener('touchcancel', tend);
+document.getElementById('tPow').addEventListener('touchstart', e => { e.preventDefault(); activatePower(); }, { passive: false });
 document.getElementById('tThrow').addEventListener('touchstart', e => { e.preventDefault(); if (mode === 'play') throwOrPick(); }, { passive: false });
-document.getElementById('tR').addEventListener('touchstart', e => { e.preventDefault(); if (mode === 'select') newRun(); else newRun(); }, { passive: false });
+const tRb = document.getElementById('tR'); let rArm = -1e9;
+tRb.addEventListener('touchstart', e => { e.preventDefault(); const now = performance.now();
+  if (S && (S.p.dead || S.won) || now - rArm < 2000) { rArm = -1e9; tRb.classList.remove('arm'); tRb.textContent = 'R'; newRun(); return; }
+  rArm = now; tRb.classList.add('arm'); tRb.textContent = 'R?'; setTimeout(() => { if (performance.now() - rArm >= 1990) { tRb.classList.remove('arm'); tRb.textContent = 'R'; } }, 2000); }, { passive: false });
+document.getElementById('tP').addEventListener('touchstart', e => { e.preventDefault(); if (mode === 'play') pause(); else if (mode === 'paused') resume(); }, { passive: false });
 // ---------- helpers ----------
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
@@ -111,6 +142,7 @@ function moveC(o, dx, dy) {
   const hit = (x, y) => solidAt(x - r, y - r) || solidAt(x + r, y - r) || solidAt(x - r, y + r) || solidAt(x + r, y + r);
   if (!hit(o.x + dx, o.y)) o.x += dx; if (!hit(o.x, o.y + dy)) o.y += dy;
 }
+function auraP(p, sp) { const a = Math.random() * 6.283, r = 10 + Math.random() * 8; return { x: p.x + Math.cos(a) * r, y: p.y + Math.sin(a) * r, vx: Math.cos(a) * sp * (0.3 + Math.random()), vy: Math.sin(a) * sp * (0.3 + Math.random()) - 30, t: 0, life: 0.35 + Math.random() * 0.4, h: Math.random() * 360 }; }
 function pop(x, y, txt, col, big) { S.pops.push({ x, y, txt, col, t: 0, big }); }
 function splat(x, y, a) { for (let i = 0; i < 14; i++) { const s = 2 + Math.random() * 5, d = Math.random() * 26; S.decals.push({ x: x + Math.cos(a + (Math.random() - .5)) * d, y: y + Math.sin(a + (Math.random() - .5)) * d, s }); } for (let i = 0; i < 10; i++) S.parts.push({ x, y, vx: Math.cos(a + (Math.random() - .5) * 1.5) * (80 + Math.random() * 160), vy: Math.sin(a + (Math.random() - .5) * 1.5) * (80 + Math.random() * 160), t: 0 }); }
 function killEnemy(e, a, how) {
@@ -118,12 +150,15 @@ function killEnemy(e, a, how) {
   if (e.w) S.items.push({ x: e.x, y: e.y, type: e.w, ammo: e.w === 'gun' ? 8 : 0, vx: 0, vy: 0, fly: 0, spin: Math.random() * 6 });
   e.w = null; splat(e.x, e.y, a); S.shake = Math.min(14, S.shake + 7);
   S.combo = S.t - S.comboT < 2.6 ? S.combo + 1 : 1; S.comboT = S.t; S.maxCombo = Math.max(S.maxCombo, S.combo);
+  if (S.pwOn <= 0) S.pw = Math.min(1, S.pw + PW_PER_COMBO * S.combo);
   const pts = Math.round((how === 'gun' ? 300 : how === 'exec' ? 600 : 500) * S.combo * S.mask.mult);
   S.score += pts; pop(e.x, e.y - 18, '+' + pts + 'pts', PAL.yel);
   if (S.combo >= 2) pop(e.x, e.y - 40, 'COMBO x' + S.combo, PAL.cyan, true);
   if (S.en.every(x => x.dead) && !S.clear) { S.clear = true; S.clearT = S.t; S.shake = 18; }
 }
-function killPlayer(a) { if (S.p.dead || S.won || GOD) return; S.p.dead = true; S.p.a = a; splat(S.p.x, S.p.y, a); S.shake = 18; S.endT = S.t; }
+function killPlayer(a) { if (S.p.dead || S.won || GOD) return;
+  if (S.inv > 0) return;
+  if (S.pwOn > 0 && S.hp > 0) { S.hp--; S.inv = 1.2; S.shake = 14; pop(S.p.x, S.p.y - 26, 'BLOCKED! ' + S.hp + ' LEFT', '#16f4ff', true); for (let i = 0; i < 16; i++) S.aura.push(auraP(S.p, 260)); return; } S.p.dead = true; S.p.a = a; splat(S.p.x, S.p.y, a); S.shake = 18; S.endT = S.t; }
 function throwOrPick() {
   const p = S.p; if (p.dead || S.won) return;
   if (p.wpn) { // throw
@@ -141,7 +176,7 @@ function attack() {
   }
   p.cd = p.wpn ? 0.32 : 0.26; p.swing = 0.16;
   for (const e of S.en) {
-    if (e.dead) continue; const d = dist(e, p); if (d > (p.wpn ? 40 : 30)) continue;
+    if (e.dead) continue; const d = dist(e, p); if (d > reach()) continue;
     if (Math.abs(angDiff(Math.atan2(e.y - p.y, e.x - p.x), p.a)) > 1.1 && d > 16) continue;
     const a = Math.atan2(e.y - p.y, e.x - p.x);
     if (e.stun > 0) killEnemy(e, a, 'exec');
@@ -152,13 +187,22 @@ function attack() {
 // ---------- update ----------
 function update(dt) {
   S.t += dt; const p = S.p;
+  // power-up timers
+  if (S.inv > 0) S.inv -= dt;
+  if (S.pwOn > 0) { S.pwOn -= dt; S.pw = Math.max(0, S.pwOn / PW_DUR); if (S.pwOn <= 0) { S.pwOn = 0; S.hp = 0; S.pw = 0; pop(p.x, p.y - 26, 'POWER DOWN', '#ff2a8a'); } }
+  if (S.pwOn > 0 && !p.dead) { S.trail.push({ x: p.x, y: p.y, a: p.a, t: S.t }); if (S.trail.length > 7) S.trail.shift(); if (S.aura.length < 48) S.aura.push(auraP(p, 60)); } else S.trail.length = 0;
+  S.embA += ((S.pwOn > 0 ? 1 : 0) - S.embA) * (1 - Math.exp(-(S.pwOn > 0 ? 5 : 2.5) * dt));
+  if (S.pwOn > 0 && !p.dead) { if (!S.lastSm || dist(S.lastSm, p) > 26) { S.lastSm = { x: p.x, y: p.y }; S.smears.push({ x: p.x, y: p.y, t: 0, rot: (Math.random() - .5) * 0.5, sx: 1 + Math.random() * 0.25 }); if (S.smears.length > 18) S.smears.shift(); } }
+  for (const q of S.smears) q.t += dt; S.smears = S.smears.filter(q => q.t < 1.6);
+  for (const q of S.aura) { q.t += dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vy -= 40 * dt; }
+  S.aura = S.aura.filter(q => q.t < q.life);
   // input -> movement & aim
   let mx = (keys.has('d') || keys.has('arrowright') ? 1 : 0) - (keys.has('a') || keys.has('arrowleft') ? 1 : 0);
   let my = (keys.has('s') || keys.has('arrowdown') ? 1 : 0) - (keys.has('w') || keys.has('arrowup') ? 1 : 0);
   if (touch.move) { const dx = touch.move.cx - touch.move.x, dy = touch.move.cy - touch.move.y, l = Math.hypot(dx, dy); if (l > 8) { mx = dx / Math.max(l, 50); my = dy / Math.max(l, 50); } }
   const ml = Math.hypot(mx, my); if (ml > 1) { mx /= ml; my /= ml; }
   if (!p.dead && !S.won) {
-    const sp = S.mask.id === 'rasmus' ? 215 : 172; moveC(p, mx * sp * dt, my * sp * dt);
+    const sp = pspeed(); moveC(p, mx * sp * dt, my * sp * dt);
     if (touch.aim) { const dx = touch.aim.cx - touch.aim.x, dy = touch.aim.cy - touch.aim.y; if (Math.hypot(dx, dy) > 10) p.a = Math.atan2(dy, dx); attack(); }
     else if (!isTouch || mouse.x) { const w = toWorld(mouse.x, mouse.y); if (!touch.move || !isTouch) p.a = Math.atan2(w.y - p.y, w.x - p.x); }
     if (isTouch && !touch.aim && ml > 0.2) p.a = Math.atan2(my, mx);
@@ -223,9 +267,72 @@ function grade(score, time) {
 }
 function finish() {
   const time = S.endT; S.timeBonus = Math.max(0, Math.round((90 - time) * 50)); S.final = S.score + S.timeBonus; S.grade = grade(S.final, time);
-  S.newBest = S.final > best; if (S.newBest) { best = S.final; bestGrade = S.grade; try { localStorage.setItem('hm_nightcall_best', best); localStorage.setItem('hm_nightcall_grade', bestGrade); } catch (e) {} }
+  S.test = GOD || TSCALE !== 1 || DBG_PW;
+  S.newBest = !S.test && S.final > best; if (S.newBest) { best = S.final; bestGrade = S.grade; try { localStorage.setItem('hm_nightcall_best', best); localStorage.setItem('hm_nightcall_grade', bestGrade); } catch (e) {} }
   setTimeout(() => { if (S.won) mode = 'results'; }, 900);
 }
+// ---------- 50 Blessings-style blood emblem ----------
+// Pixel-painted like the in-game/wiki symbol (chunky bright-red ring, bars running past the rim, drips and spatter),
+// with the three bars vertical as requested. Built once into a small offscreen canvas, then scaled up unsmoothed: cheap on mobile.
+const EMB = (() => {
+  const N = 34, c = document.createElement('canvas'); c.width = c.height = N; const x = c.getContext('2d');
+  let sd = 50; const rnd = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  const px = (i, j, col) => { if (i >= 0 && j >= 0 && i < N && j < N) { x.fillStyle = col; x.fillRect(i, j, 1, 1); } };
+  const C = N / 2, R = 11.5;
+  const col = () => rnd() < 0.18 ? '#a3000c' : rnd() < 0.1 ? '#ff2a2a' : '#e00010';
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const d = Math.hypot(i + .5 - C, j + .5 - C), a = Math.atan2(j - C, i - C);
+    const w = 1.6 + 0.9 * Math.sin(a * 3 + 1) + rnd() * 0.6; if (Math.abs(d - R) < w) px(i, j, col()); }
+  for (const bx of [C - 6, C - 1, C + 4]) { const top = 3 + Math.floor(rnd() * 3), bot = N - 6 - Math.floor(rnd() * 3), w = 2 + (rnd() < .5 ? 1 : 0);
+    for (let j = top; j <= bot; j++) for (let k = 0; k < w; k++) if (rnd() > 0.05) px(Math.round(bx + k + (rnd() < .12 ? (rnd() < .5 ? -1 : 1) : 0)), j, col());
+    const drip = 2 + Math.floor(rnd() * 4); for (let j = 1; j <= drip; j++) px(Math.round(bx + (w > 2 ? 1 : 0)), bot + j, '#c0000e'); }
+  for (let k = 0; k < 6; k++) { const a = Math.PI * (0.15 + rnd() * 0.7), i = Math.round(C + Math.cos(a) * R), j0 = Math.round(C + Math.sin(a) * R) + 1, L = 1 + Math.floor(rnd() * 4); for (let j = 0; j < L; j++) px(i, j0 + j, '#c0000e'); }
+  for (let k = 0; k < 18; k++) { const a = rnd() * 6.283, r = R + 3 + rnd() * 4; px(Math.round(C + Math.cos(a) * r), Math.round(C + Math.sin(a) * r), col()); }
+  return c;
+})();
+function drawEmblem(x0, y0, R, alpha, rot) {
+  if (alpha <= 0.01) return;
+  g.save(); g.translate(x0, y0); g.rotate(rot); g.globalAlpha = alpha; g.imageSmoothingEnabled = false;
+  const s = R * 2 * 34 / 23; g.drawImage(EMB, -s / 2, -s / 2, s, s); g.restore();
+}
+// ---------- power-up visuals ----------
+function pwFade() { return S.pwOn < 3 ? (Math.floor(S.t * (6 + (3 - S.pwOn) * 4)) % 2 ? 0.25 : 1) * Math.max(0.3, S.pwOn / 3) : 1; } // warning flicker in the last 3s
+function drawAura() {
+  const p = S.p, t = S.t, f = pwFade(), hue = (t * 240) % 360;
+  g.save(); g.globalCompositeOperation = 'lighter';
+  // chromatic afterimages
+  S.trail.forEach((q, i) => { const a = (i + 1) / S.trail.length * 0.35 * f; g.globalAlpha = a;
+    g.fillStyle = '#ff2a8a'; g.fillRect(q.x - 11 - 2, q.y - 11, 22, 22); g.fillStyle = '#16f4ff'; g.fillRect(q.x - 11 + 2, q.y - 11, 22, 22); });
+  // layered neon rings
+  for (let i = 0; i < 3; i++) { const r = 20 + i * 7 + Math.sin(t * 8 + i) * 2.5; g.globalAlpha = (0.55 - i * 0.15) * f; g.strokeStyle = `hsl(${(hue + i * 60) % 360},100%,${60 + i * 10}%)`; g.lineWidth = 3 - i * 0.7; g.beginPath(); g.arc(p.x, p.y, r, 0, 6.283); g.stroke(); }
+  // rotating sigils
+  g.globalAlpha = 0.7 * f; g.strokeStyle = `hsl(${(hue + 180) % 360},100%,70%)`; g.lineWidth = 1.5;
+  for (let k = 0; k < 2; k++) { const R = 34 + k * 8, rot = t * (k ? -1.6 : 2.2); g.beginPath(); for (let i = 0; i <= 3; i++) { const a = rot + i * 2.094; i ? g.lineTo(p.x + Math.cos(a) * R, p.y + Math.sin(a) * R) : g.moveTo(p.x + Math.cos(a) * R, p.y + Math.sin(a) * R); } g.stroke();
+    for (let i = 0; i < 6; i++) { const a = rot * 1.3 + i * 1.047; g.fillStyle = g.strokeStyle; g.fillRect(p.x + Math.cos(a) * (R + 6) - 1.5, p.y + Math.sin(a) * (R + 6) - 1.5, 3, 3); } }
+  // flame particles
+  for (const q of S.aura) { const k = 1 - q.t / q.life; g.globalAlpha = k * 0.9 * f; g.fillStyle = `hsl(${(hue + q.h * 0.3) % 360},100%,${55 + k * 35}%)`; const s = 2 + k * 4; g.fillRect(q.x - s / 2, q.y - s / 2, s, s); }
+  g.restore();
+}
+function drawPowerHUD(hs) {
+  const t = S.t, v = S.pw, on = S.pwOn > 0, ready = v >= 1 && !on;
+  const w = Math.min(220, W * 0.3), h = Math.max(12, hs), x = isTouch ? 16 : W - 16 - w, y = isTouch ? 96 : H - 30 - h;
+  // colour: pink -> cyan -> white-hot
+  const col = v < 0.5 ? `hsl(${330 - v * 2 * 145},100%,${55 + v * 10}%)` : `hsl(185,100%,${60 + (v - 0.5) * 2 * 38}%)`;
+  const pulse = 1 + (ready ? 0.12 : v * 0.05) * Math.sin(t * (ready ? 12 : 6));
+  const flick = v > 0.6 && Math.random() < (v - 0.6) * 0.25 ? 0.55 : 1;
+  g.save(); g.translate(x + w / 2, y + h / 2); g.scale(pulse, pulse); g.translate(-w / 2, -h / 2);
+  g.fillStyle = '#000a'; g.fillRect(-3, -3, w + 6, h + 6);
+  g.shadowColor = col; g.shadowBlur = 4 + v * 26 * flick; g.globalAlpha = flick;
+  g.fillStyle = col; g.fillRect(0, 0, w * v, h); g.shadowBlur = 0; g.globalAlpha = 1;
+  g.strokeStyle = on ? '#fff' : col; g.lineWidth = 2; g.strokeRect(0, 0, w, h);
+  if (v > 0.4) { g.globalCompositeOperation = 'lighter'; for (let i = 0; i < Math.floor(v * 8); i++) { g.fillStyle = Math.random() < .5 ? '#fff' : col; g.fillRect(w * v * Math.random(), -6 - Math.random() * 10 * v, 2, 2); } g.globalCompositeOperation = 'source-over'; }
+  g.restore();
+  const label = on ? `POWER ${S.pwOn.toFixed(1)}s` : ready ? (isTouch ? 'READY! TAP POWER' : 'READY! [Q]/[SHIFT]') : 'POWER';
+  txt(label, x + (isTouch ? 0 : w), y - h * 0.9, Math.max(7, hs * 0.65), ready ? (Math.floor(t * 6) % 2 ? '#fff' : PAL.cyan) : col, isTouch ? 'left' : 'right');
+  if (on) for (let i = 0; i < 2; i++) { const px = x + (isTouch ? i * 18 : w - 14 - i * 18), py = y - h * 2.2; g.fillStyle = i < S.hp ? PAL.cyan : '#333'; g.shadowColor = PAL.cyan; g.shadowBlur = i < S.hp ? 10 : 0; g.fillRect(px, py - 6, 12, 12); g.shadowBlur = 0; }
+  // touch button state
+  if (tPow) { const st = on ? 'on' : ready ? 'ready' : ''; if (tPow.dataset.st !== st) { tPow.dataset.st = st; } tPow.style.setProperty('--p', (v * 100).toFixed(0) + '%'); }
+}
+const tPow = document.getElementById('tPow');
 // ---------- render ----------
 function toWorld(x, y) { return { x: (x - W / 2) / zoom + S.cam.x, y: (y - H / 2) / zoom + S.cam.y }; }
 function txt(s, x, y, size, col, align = 'center', shadow = '#000') {
@@ -277,7 +384,10 @@ function render() {
   for (const e of S.en) if (e.dead) drawGuy(e, '#e8e8e8', '#e0b48a', true);
   if (S.p.dead) drawGuy(S.p, '#2a6cff', '#e0b48a', true);
   for (const e of S.en) if (!e.dead) { drawGuy(e, e.stun > 0 ? '#9a9a9a' : '#f2f2f2', '#e0b48a', false, null, e.w, e.swing); if (e.stun > 0) txt('Z', e.x + 10, e.y - 16, 8, PAL.cyan); }
-  if (!S.p.dead) drawGuy(S.p, '#ff4fa3', '#e0b48a', false, imgs[S.mask.id], S.p.wpn, S.p.swing);
+  for (const q of S.smears) { g.save(); g.translate(q.x, q.y); g.scale(q.sx, 1); drawEmblem(0, 0, 30, 0.3 * (1 - q.t / 1.6) * Math.max(S.embA, 0.3), q.rot); g.restore(); }
+  if (!S.p.dead && S.embA > 0.01) drawEmblem(S.p.x, S.p.y, 34 * (1 + 0.05 * Math.sin(S.t * 5)), S.embA * (S.pwOn > 0 ? pwFade() * 0.35 + 0.6 : 0.95), 0);
+  if (S.pwOn > 0 && !S.p.dead) drawAura();
+  if (!S.p.dead && !(S.inv > 0 && Math.floor(S.t * 20) % 2)) drawGuy(S.p, S.pwOn > 0 ? `hsl(${(S.t * 240) % 360},100%,65%)` : '#ff4fa3', '#e0b48a', false, imgs[S.mask.id], S.p.wpn, S.p.swing);
   g.fillStyle = PAL.yel; for (const b of S.bullets) g.fillRect(b.x - 2, b.y - 2, 4, 4);
   for (const q of S.parts) { g.fillStyle = q.spark ? PAL.yel : PAL.blood; g.fillRect(q.x, q.y, 3, 3); }
   for (const q of S.pops) { const a = 1 - q.t / 1.2; g.globalAlpha = a; txt(q.txt, q.x, q.y - q.t * 30, q.big ? 12 : 9, q.col); g.globalAlpha = 1; }
@@ -286,13 +396,31 @@ function render() {
   g.restore();
   // HUD
   const hs = Math.max(10, Math.min(16, W / 60));
-  txt(String(S.score).padStart(6, '0') + 'pts', W - 16, 54, hs * 1.4, PAL.yel, 'right', PAL.pink);
-  if (S.combo >= 2 && S.t - S.comboT < 2.6) txt('COMBO x' + S.combo, W - 16, 54 + hs * 2.2, hs, PAL.cyan, 'right');
+  const sx = isTouch ? W / 2 : W - 16, sa = isTouch ? 'center' : 'right', sy = isTouch ? 36 : 54, ss = isTouch ? Math.min(hs * 1.4, (W - 250) / 10) : hs * 1.4;
+  txt(String(S.score).padStart(6, '0') + 'pts', sx, sy, ss, PAL.yel, sa, PAL.pink);
+  if (S.combo >= 2 && S.t - S.comboT < 2.6) txt('COMBO x' + S.combo, sx, sy + hs * 2.2, hs, PAL.cyan, sa);
   txt(`${S.mask.name}  ${S.p.wpn ? S.p.wpn.toUpperCase() + (S.p.wpn === 'gun' ? ' ' + S.p.ammo : '') : 'FISTS'}`, 16, H - 24, hs * 0.8, '#fff', 'left', PAL.vio);
   txt(`ENEMIES ${S.en.filter(e => !e.dead).length}`, 16, 56, hs * 0.8, PAL.pink, 'left');
+  if (S.pwOn > 0) { const f = pwFade(), hue = (S.t * 240) % 360, gr = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.35, W / 2, H / 2, Math.max(W, H) * 0.75);
+    gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, `hsla(${hue},100%,55%,${0.32 * f})`); g.fillStyle = gr; g.fillRect(0, 0, W, H);
+    g.fillStyle = `hsla(${hue},100%,65%,${f})`; g.fillRect(0, 0, W * S.pwOn / PW_DUR, 5); }
+  if (S.dil > 0) { g.fillStyle = `rgba(255,255,255,${S.dil * 0.5})`; g.fillRect(0, 0, W, H); }
+  drawPowerHUD(hs);
   if (S.clear && !S.won) { const s = 1 + 0.08 * Math.sin(S.t * 10); g.save(); g.translate(W / 2, H * 0.22); g.scale(s, s); g.rotate(-0.05); txt('GO TO CAR', 0, 0, Math.min(40, W / 14), PAL.yel, 'center', PAL.pink); g.restore(); }
   if (S.p.dead) { g.fillStyle = 'rgba(80,0,20,.35)'; g.fillRect(0, 0, W, H); const s = 1 + 0.05 * Math.sin(S.t * 8); g.save(); g.translate(W / 2, H / 2); g.scale(s, s); txt("YOU'RE DEAD", 0, -30, Math.min(34, W / 16), PAL.pink, 'center', '#000'); txt(isTouch ? 'TAP R TO RESTART' : 'PRESS R TO RESTART', 0, 24, Math.min(18, W / 30), PAL.yel); g.restore(); }
   if (mode === 'results') renderResults();
+  if (mode === 'paused') renderPause();
+}
+let pauseBoxes = [];
+function pauseHit(x, y) { const b = pauseBoxes.find(b => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h); if (b) b.fn(); }
+function renderPause() {
+  g.fillStyle = 'rgba(11,2,22,.82)'; g.fillRect(0, 0, W, H);
+  const fs = Math.min(34, W / 12); txt('PAUSED', W / 2, H * 0.22, fs, PAL.pink, 'center', PAL.cyan);
+  const items = [['RESUME', resume, isTouch ? '' : ' [ESC]'], ['RESTART', newRun, isTouch ? '' : ' [R]'], ['QUIT TO MASKS', quitToSelect, isTouch ? '' : ' [Q]']];
+  const bw = Math.min(320, W - 40), bh = Math.max(46, Math.min(58, H / 9)); pauseBoxes = [];
+  items.forEach(([label, fn, key], i) => { const x = W / 2 - bw / 2, y = H * 0.34 + i * (bh + 14); pauseBoxes.push({ x, y, w: bw, h: bh, fn });
+    g.fillStyle = i ? '#1a0330' : '#2a0646'; g.fillRect(x, y, bw, bh); g.strokeStyle = i ? PAL.vio : PAL.yel; g.lineWidth = 3; g.strokeRect(x, y, bw, bh);
+    txt(label + key, W / 2, y + bh / 2, Math.min(14, bw / 20), i ? '#fff' : PAL.yel); });
 }
 let selBoxes = [];
 function selectHit(x, y) { return selBoxes.findIndex(b => x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h); }
@@ -312,7 +440,7 @@ function renderSelect() {
     g.font = `${Math.max(6, cw / 26)}px "Press Start 2P"`; g.fillStyle = PAL.cyan; g.textAlign = 'center'; g.fillText(m.perk, x + cw / 2, y + ch * 0.86, cw - 10);
   });
   txt(isTouch ? 'TAP A MASK, TAP AGAIN TO START' : '1-3 / CLICK TO PICK - ENTER TO START', W / 2, y0 + ch + 34, Math.min(11, W / 50), '#fff');
-  txt(isTouch ? 'LEFT: MOVE  RIGHT: AIM+ATTACK  THROW BTN' : 'WASD MOVE - MOUSE AIM - CLICK ATTACK - RMB/SPACE THROW/PICK UP - R RESTART', W / 2, y0 + ch + 58, Math.min(9, W / 80), PAL.vio, 'center');
+  txt(isTouch ? 'LEFT: MOVE  RIGHT: AIM+ATTACK  THROW BTN' : 'WASD MOVE - MOUSE AIM - CLICK ATTACK - RMB/SPACE THROW/PICK UP - Q POWER - P PAUSE - R RESTART', W / 2, y0 + ch + 58, Math.min(9, W / 80), PAL.vio, 'center');
   if (best) txt(`BEST ${best}pts  ${bestGrade}`, W / 2, H - 30, Math.min(11, W / 50), PAL.yel);
 }
 function renderResults() {
@@ -322,20 +450,21 @@ function renderResults() {
   const rows = [['KILLS', S.kills], ['MAX COMBO', 'x' + S.maxCombo], ['TIME', S.endT.toFixed(1) + 's'], ['SCORE', S.score], ['TIME BONUS', '+' + S.timeBonus], ['TOTAL', S.final + 'pts']];
   for (const [k, v] of rows) { txt(k, cx - 20, y, 12 * s + 4, '#fff', 'right'); txt(String(v), cx + 20, y, 12 * s + 4, PAL.yel, 'left'); y += 26 * s + 8; }
   const gs = 1 + 0.06 * Math.sin(performance.now() / 120); g.save(); g.translate(cx, y + 40 * s); g.scale(gs, gs); g.rotate(-0.1); txt(S.grade, 0, 0, 64 * s + 16, PAL.yel, 'center', PAL.pink); g.restore();
-  y += 100 * s + 20; txt(S.newBest ? 'NEW BEST!' : `BEST ${best}pts ${bestGrade}`, cx, y, 12 * s + 4, S.newBest ? PAL.cyan : '#fff');
+  y += 100 * s + 20; txt(S.test ? 'TEST MODE - SCORE NOT SAVED' : S.newBest ? 'NEW BEST!' : `BEST ${best}pts ${bestGrade}`, cx, y, 12 * s + 4, S.newBest ? PAL.cyan : '#fff');
   txt(isTouch ? 'TAP TO PLAY AGAIN' : 'PRESS R / CLICK TO PLAY AGAIN - M FOR MASKS', cx, y + 34, 9 * s + 3, PAL.vio);
 }
-function resize() { DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR; zoom = Math.max(1, Math.min(2.2, Math.min(W, H) / 400)); }
+function resize() { DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR; zoom = Math.min(W, H) < 520 ? Math.max(1.35, Math.min(1.9, Math.max(W, H) / 560)) : Math.max(1, Math.min(2.2, Math.min(W, H) / 400)); }
+setModeClass();
 addEventListener('resize', resize); resize();
 let last = performance.now();
 const GOD = new URLSearchParams(location.search).get('god') === '1'; // test-only invulnerability
 const TSCALE = Math.max(0.05, Math.min(1, +new URLSearchParams(location.search).get('ts') || 1)); // ?ts=0.25 slow-mo (used by automated tests)
 function loop(now) {
   const dt = Math.min(0.033, (now - last) / 1000); last = now;
-  if (mode !== 'select' && S) update(dt * TSCALE);
+  if ((mode === 'play' || mode === 'results') && S) { let d = dt * TSCALE; if (S.dil > 0) { S.dil -= dt; d *= 0.3; } update(d); }
   render(); requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 // test hook (read-only state + dt override for headless verification)
-window.NC = { state: () => S && ({ mode, p: { x: S.p.x, y: S.p.y, a: S.p.a, dead: S.p.dead, wpn: S.p.wpn, ammo: S.p.ammo }, en: S.en.map(e => ({ x: e.x, y: e.y, dead: e.dead, stun: e.stun, st: e.st, w: e.w })), items: S.items.map(i => ({ x: i.x, y: i.y, type: i.type })), score: S.score, kills: S.kills, clear: S.clear, won: S.won, grade: S.grade, final: S.final, maxCombo: S.maxCombo, car: CAR, zoom, cam: S.cam }), mode: () => mode, best: () => best };
+window.NC = { touchMode: () => isTouch, state: () => S && ({ mode, test: S.test, pw: S.pw, pwOn: S.pwOn, hp: S.hp, inv: S.inv, reach: reach(), speed: pspeed(), p: { x: S.p.x, y: S.p.y, a: S.p.a, dead: S.p.dead, wpn: S.p.wpn, ammo: S.p.ammo }, en: S.en.map(e => ({ x: e.x, y: e.y, dead: e.dead, stun: e.stun, st: e.st, w: e.w })), items: S.items.map(i => ({ x: i.x, y: i.y, type: i.type })), score: S.score, kills: S.kills, clear: S.clear, won: S.won, grade: S.grade, final: S.final, maxCombo: S.maxCombo, car: CAR, zoom, cam: S.cam }), mode: () => mode, best: () => best };
 })();
