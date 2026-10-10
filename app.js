@@ -71,3 +71,4 @@ let ac,timer;$('#music').onclick=function(){
   this.textContent='MUSIC: ON';this.setAttribute('aria-pressed','true')};
 fetch('data.json').then(r=>r.json()).then(d=>{D=d;const h=location.hash.slice(1);render();
   ['characters','masks','weapons'].forEach(k=>{const i=d[k].findIndex(x=>(x.id||x.name.toLowerCase())===h);if(i>=0){document.querySelector(`[data-tab=${k}]`).click();open(i)}})});
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
