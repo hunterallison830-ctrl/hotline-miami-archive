@@ -102,5 +102,12 @@ body:has(.modal:not([hidden])) .spiral-wrap{display:none}
 .play-btn:hover,.play-btn:focus-visible{background:var(--cyan);outline:none;transform:rotate(2deg) scale(1.06)}
 .pb-ico{animation:blink 1s steps(2) infinite}
 @keyframes pbPulse{0%,100%{box-shadow:0 0 12px var(--yel),6px 6px 0 var(--pink)}50%{box-shadow:0 0 34px var(--yel),6px 6px 0 var(--pink)}}
-@media(max-width:600px){.spiral-wrap{flex-wrap:nowrap;gap:8px}.spiral-wrap .spiral-btn{flex:1;width:auto}.play-btn{padding:10px 12px;font-size:14px;transform:none}}
+/* phones, portrait and landscape: small PLAY stacked directly above SPIRAL MODE in the fixed bottom dock */
+@media (max-width:600px),(max-height:500px) and (pointer:coarse){
+ .spiral-wrap{position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));margin:0;z-index:55;flex-direction:column;flex-wrap:nowrap;align-items:stretch;gap:6px}
+ .spiral-wrap .spiral-btn{width:auto;justify-content:center;transform:none;padding:8px 12px;gap:10px;background:linear-gradient(90deg,#1a0330,#2a0646)}
+ .spiral-wrap .spiral-btn small{display:none}.spiral-txt{font-size:clamp(16px,4.6vw,22px)}.spiral-ico{width:20px;height:30px}
+ .play-btn{order:-1;align-self:center;padding:6px 14px;font-size:11px;gap:6px;transform:none;box-shadow:0 0 10px var(--yel),3px 3px 0 var(--pink)}
+ body:not(.helix-page){padding-bottom:120px}
+}
 @media(prefers-reduced-motion:reduce){.play-btn,.pb-ico{animation:none}}

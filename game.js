@@ -29,7 +29,7 @@ const solidAt = (x, y) => wall(Math.floor(x / TS), Math.floor(y / TS));
 const T = (tx, ty) => ({ x: tx * TS + TS / 2, y: ty * TS + TS / 2 });
 const CAR = T(4, 15.5);
 const MASKS = [
-  { id: 'richard', name: 'RICHARD', perk: 'NO PERK. +25% SCORE', img: 'img/m/richard.png', mult: 1.25 },
+  { id: 'richard', name: 'RICHARD', perk: 'NO PERK. PURE SKILL.', img: 'img/m/richard.png', mult: 1.25 },
   { id: 'tony', name: 'TONY', perk: 'FISTS ARE LETHAL', img: 'img/m/tony.png', mult: 1 },
   { id: 'rasmus', name: 'RASMUS', perk: 'MOVE 25% FASTER', img: 'img/m/rasmus.png', mult: 1 },
 ];
@@ -286,9 +286,8 @@ function render() {
   g.restore();
   // HUD
   const hs = Math.max(10, Math.min(16, W / 60));
-  const sx = isTouch ? W / 2 : W - 16, sa = isTouch ? 'center' : 'right', sy = isTouch ? 24 : 54;
-  txt(String(S.score).padStart(6, '0') + 'pts', sx, sy, hs * 1.4, PAL.yel, sa, PAL.pink);
-  if (S.combo >= 2 && S.t - S.comboT < 2.6) txt('COMBO x' + S.combo, sx, sy + hs * 2.2, hs, PAL.cyan, sa);
+  txt(String(S.score).padStart(6, '0') + 'pts', W - 16, 54, hs * 1.4, PAL.yel, 'right', PAL.pink);
+  if (S.combo >= 2 && S.t - S.comboT < 2.6) txt('COMBO x' + S.combo, W - 16, 54 + hs * 2.2, hs, PAL.cyan, 'right');
   txt(`${S.mask.name}  ${S.p.wpn ? S.p.wpn.toUpperCase() + (S.p.wpn === 'gun' ? ' ' + S.p.ammo : '') : 'FISTS'}`, 16, H - 24, hs * 0.8, '#fff', 'left', PAL.vio);
   txt(`ENEMIES ${S.en.filter(e => !e.dead).length}`, 16, 56, hs * 0.8, PAL.pink, 'left');
   if (S.clear && !S.won) { const s = 1 + 0.08 * Math.sin(S.t * 10); g.save(); g.translate(W / 2, H * 0.22); g.scale(s, s); g.rotate(-0.05); txt('GO TO CAR', 0, 0, Math.min(40, W / 14), PAL.yel, 'center', PAL.pink); g.restore(); }
