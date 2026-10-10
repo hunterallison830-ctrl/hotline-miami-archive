@@ -53,7 +53,7 @@ a{color:var(--cyan)}
 .modal[hidden]{display:none}
 .dossier{width:min(900px,100%);padding:26px;animation:tapein .35s steps(6)}
 @keyframes tapein{0%{transform:scaleY(.02);filter:brightness(4)}60%{transform:scaleY(1.05) skewX(8deg)}100%{transform:none}}
-.x{position:absolute;right:10px;top:10px;font-family:'Press Start 2P';background:var(--pink);border:0;color:#000;padding:8px 10px;cursor:pointer;z-index:3}
+.x{position:sticky;float:right;margin:-12px -12px 0 8px;top:0;font-family:'Press Start 2P';background:var(--pink);border:0;color:#000;padding:8px 10px;cursor:pointer;z-index:3}
 .dhead{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start;position:relative}
 .dimg{width:200px;height:200px;flex:none;background:radial-gradient(circle,#4a0a66,#000);border:3px solid var(--cyan);display:flex;align-items:center;justify-content:center}
 .dimg img{max-width:100%;max-height:100%;image-rendering:pixelated}
@@ -77,3 +77,6 @@ footer{max-width:1000px;margin:20px auto 40px;padding:18px;font-size:18px;opacit
 @media(prefers-reduced-motion:reduce){*{animation:none!important}}
 @media(max-width:600px){.title{font-size:12vw;transform:rotate(-4deg) scaleX(.82)}.pre{font-size:8px}}
 .menu a.menulink{font-family:'Press Start 2P';font-size:clamp(10px,2vw,16px);color:var(--cyan);padding:6px 14px;text-decoration:none;text-shadow:2px 2px 0 #000}.menu a.menulink:hover{color:#000;background:var(--cyan)}
+
+.card.here{outline:3px solid var(--yel);outline-offset:3px}
+@media(max-width:600px){.modal{padding:34px 28px}}

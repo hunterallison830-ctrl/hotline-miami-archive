@@ -923,13 +923,13 @@
    "status": "UNKNOWN",
    "death": "Unknown (Presumably alive)",
    "img": "img/c/the-janitors.png",
-   "desc": "The Janitors, also known as Dennis and Jonatan are two mysterious men linked to the phone calls received by Jacket and other operators of the nationalist organization 50 Blessings. They are the main antagonists of Hotline Miami and return as secondary antagonists in Hotline Miami 2: Wrong Number. The Janitors are based on Dennis Wedin and Jonatan Soderstr\u00f6m, the two creators of the game.",
+   "desc": "The Janitors, also known as Dennis and Jonatan are two mysterious men linked to the phone calls received by Jacket and other operators of the nationalist organization 50 Blessings. They are the main antagonists of Hotline Miami and return as secondary antagonists in Hotline Miami 2: Wrong Number. The Janitors are based on Dennis Wedin and Jonatan Soderström, the two creators of the game.",
    "story": [
     {
      "h": "Description",
      "p": [
       "In Hotline Miami, both of them wear green suits and caps as their uniforms, while Dennis has blonde hair of medium length, blue eyes, and a piercing in his nose. Jonatan has short brown hair, blue eyes, a mustache and a goatee, and appears to also have stubble.",
-      "In Hotline Miami 2, they both no longer wear their uniforms, but civil clothing, and have both grown their beards (especially Dennis, who now has a full beard and dyed brown hair), a reference to Wedin and Soderstr\u00f6m whose looks changed since the creation of the first game. In Release, Dennis is carrying a large bag, and Jonatan has a backpack."
+      "In Hotline Miami 2, they both no longer wear their uniforms, but civil clothing, and have both grown their beards (especially Dennis, who now has a full beard and dyed brown hair), a reference to Wedin and Soderström whose looks changed since the creation of the first game. In Release, Dennis is carrying a large bag, and Jonatan has a backpack."
      ]
     },
     {
@@ -1016,7 +1016,7 @@
    "status": "DEAD",
    "death": "Dead (shot in the head)",
    "img": "img/c/the-grandfather.png",
-   "desc": "Ivan Lebedev (Cyrillic: \u0418\u0432\u0430\u043d \u041b\u0435\u0431\u0435\u0434\u0435\u0432), also known as the Old Man or The Grandfather, is a character found in the chapter Showdown in Hotline Miami, and the patriarch of the local Russian Mafia. After killing The Father and The Bodyguard, the telephone on the boss's desk rings. The man on the line complains about all of the racket, and angrily hangs up when he does not get an answer. Jacket then takes the elevator up to the room with the wheelchair bound Ivan Lebedev, revealed to be the caller. Lebedev asks what business Jacket has here, but he cuts himself off and simply laments his sinful life, stating that \"Nothing seems to matter any more, does it?\" He gives permission to Jacket to \"Just go ahead and do whatever you came here to do.\". Jacket shoots him in the head, steps into the balcony, lights a cigarette and tosses the Polaroid over the edge as the credits roll.",
+   "desc": "Ivan Lebedev (Cyrillic: Иван Лебедев), also known as the Old Man or The Grandfather, is a character found in the chapter Showdown in Hotline Miami, and the patriarch of the local Russian Mafia. After killing The Father and The Bodyguard, the telephone on the boss's desk rings. The man on the line complains about all of the racket, and angrily hangs up when he does not get an answer. Jacket then takes the elevator up to the room with the wheelchair bound Ivan Lebedev, revealed to be the caller. Lebedev asks what business Jacket has here, but he cuts himself off and simply laments his sinful life, stating that \"Nothing seems to matter any more, does it?\" He gives permission to Jacket to \"Just go ahead and do whatever you came here to do.\". Jacket shoots him in the head, steps into the balcony, lights a cigarette and tosses the Polaroid over the edge as the credits roll.",
    "story": [],
    "masks": [],
    "wiki": "https://hotlinemiami.fandom.com/wiki/The_Grandfather"
@@ -1124,7 +1124,7 @@
    "status": "DEAD",
    "death": "Dead (atomic blast)",
    "img": "img/c/sharon-wright.png",
-   "desc": "\"I haven't heard from you in a while. I miss you. The kids miss you too. I think we can still make this work. But I can't live with a man who puts his job before his family. I still love you, you know I do. I hope you love me too. Please call me when you read this.\ufeff\" Sharon Wright is a supporting character appearing in Hotline Miami 2: Wrong Number. She is the wife of Evan Wright, a writer and former war correspondent. Her face is only shown once, in the intro to Subway, as an apparition of Richard. She appears only once in person, eating dinner with Evan and their two children as the nuclear weapons hit Miami, if the player chooses to make Evan call her in the outro of Release instead of finishing his book. She leaves several notes to Evan throughout the game regarding her concern for their marriage due to stress from his book, culminating with her leaving him because she feels he canno",
+   "desc": "\"I haven't heard from you in a while. I miss you. The kids miss you too. I think we can still make this work. But I can't live with a man who puts his job before his family. I still love you, you know I do. I hope you love me too. Please call me when you read this.﻿\" Sharon Wright is a supporting character appearing in Hotline Miami 2: Wrong Number. She is the wife of Evan Wright, a writer and former war correspondent. Her face is only shown once, in the intro to Subway, as an apparition of Richard. She appears only once in person, eating dinner with Evan and their two children as the nuclear weapons hit Miami, if the player chooses to make Evan call her in the outro of Release instead of finishing his book. She leaves several notes to Evan throughout the game regarding her concern for their marriage due to stress from his book, culminating with her leaving him because she feels he canno",
    "story": [],
    "masks": [],
    "wiki": "https://hotlinemiami.fandom.com/wiki/Sharon_Wright"
@@ -2871,7 +2871,7 @@
     "HM1",
     "HM2"
    ],
-   "cut": true,
+   "cut": false,
    "img": "img/w/crossbow.png",
    "desc": "The Crossbow can be seen in Jacket's Final Chapter in a glass case next to the Trophy Weapon.",
    "notes": [],
@@ -3099,7 +3099,7 @@
      "h": "Overview",
      "p": [
       "It is a green unmarked bottle (presumably the same brand as the Beer Can) that breaks upon hitting anything that isn't a common enemy.",
-      "In Hotline Miami, the Glass Bottle is an unlockable weapon, meaning it can spawn randomly once it is unlocked. It is the second weapon you receive. It cannot kill enemies by directly hitting them with a throw, but it has an unique execution. The Glass Bottle is a one-time use weapon \u2014 it will break both upon missing an enemy and after being used in an execution. This weapon is required for the Pitcher, Always On Top and I Got New Friends achievements."
+      "In Hotline Miami, the Glass Bottle is an unlockable weapon, meaning it can spawn randomly once it is unlocked. It is the second weapon you receive. It cannot kill enemies by directly hitting them with a throw, but it has an unique execution. The Glass Bottle is a one-time use weapon — it will break both upon missing an enemy and after being used in an execution. This weapon is required for the Pitcher, Always On Top and I Got New Friends achievements."
      ]
     },
     {
@@ -3238,7 +3238,7 @@
    ],
    "cut": false,
    "img": "img/w/kalashnikov.png",
-   "desc": "The Kalashnikov (Russian: \u041a\u0430\u043b\u0430\u0448\u043d\u0438\u043a\u043e\u0432) is a weapon featured in Hotline Miami 2: Wrong Number.",
+   "desc": "The Kalashnikov (Russian: Калашников) is a weapon featured in Hotline Miami 2: Wrong Number.",
    "notes": [
     {
      "h": "Overview",
@@ -3926,7 +3926,7 @@
     "Execution": "Takes human shield",
     "Unlockable": "Yes",
     "Found": "Weapon Spawn",
-    "Real-world model": "\u0160korpion vz. 61"
+    "Real-world model": "Škorpion vz. 61"
    },
    "aka": [],
    "wiki": "https://hotlinemiami.fandom.com/wiki/Skorpion"

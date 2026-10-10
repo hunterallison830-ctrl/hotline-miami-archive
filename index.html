@@ -3,7 +3,7 @@
 <script>
 (function(){var q=new URLSearchParams(location.search);if(q.get('grid')==='1')return location.replace('grid.html'+location.hash);
 var rm=matchMedia('(prefers-reduced-motion: reduce)').matches&&q.get('3d')!=='1';var gl=false;try{var c=document.createElement('canvas');gl=!!(c.getContext('webgl2')||c.getContext('webgl'))}catch(e){}
-if(!gl||rm)location.replace('grid.html'+location.hash);})();
+if(!gl||rm)location.replace('grid.html'+location.search+location.hash);})();
 </script>
 <meta name="description" content="Fan archive of every character, mask and weapon in Hotline Miami and Hotline Miami 2: Wrong Number.">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#ff2a8a"><link rel="icon" href="icons/icon-192.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="HM Archive">
@@ -25,9 +25,9 @@ if(!gl||rm)location.replace('grid.html'+location.hash);})();
     <button data-deck="weapons">WEAPONS</button>
     <button data-deck="dead">BODY COUNT</button>
   </nav>
-  <div class="hx-info"><div id="hxIdx">01 / 54</div><div id="hxName">…</div><div id="hxTags"></div>
+  <div class="hx-info" aria-live="polite"><div id="hxIdx">01 / 54</div><div id="hxName">…</div><div id="hxTags"></div>
     <button id="hxOpen" class="hx-open">▸ OPEN FILE</button></div>
-  <a class="hx-grid" href="grid.html">▦ GRID VIEW / SEARCH</a>
+  <a class="hx-grid" id="toGrid" href="grid.html">▦ GRID VIEW / SEARCH</a>
   <p class="hx-hint">SCROLL · SWIPE · ↑↓ · ENTER</p>
 </aside>
 <div id="loading" class="hx-loading">REWINDING TAPE…</div>

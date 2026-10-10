@@ -117,22 +117,24 @@ function updateInfo(i, force) {
   const o = deck[i], x = o.x;
   $('#hxIdx').textContent = `${String(i + 1).padStart(2, '0')} / ${String(deck.length).padStart(2, '0')} ${deckName === 'dead' ? 'BODIES' : deckName.toUpperCase()}`;
   $('#hxName').textContent = x.name;
+  const gl = $('#toGrid'); if (gl) gl.href = `grid.html?deck=${deckName}&at=${encodeURIComponent(window.HM.slug(x))}`;
   const st = x.status ? `<span class="tag ${x.status.startsWith('DEAD') ? 'dead' : x.status === 'ALIVE' ? 'alive' : 'unk'}">${x.status}</span>` : '';
   $('#hxTags').innerHTML = st + (x.games || (x.entries || []).map(e => e.game).filter((g, j, a) => a.indexOf(g) === j)).map(g => `<span class="tag">${g}</span>`).join('') + (x.type ? `<span class="tag">${x.type.toUpperCase()}</span>` : '');
 }
 const openActive = () => { const o = deck[Math.round(cur)]; if (o) window.HM.open(o.k, o.i); };
 
 // ---------- layout ----------
-let mobile = false;
+let mobile = false, short = false;
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const L = { active: V(0, 0, 0), hx: V(0, 0, 0), exit: V(0, 0, 0) };
 function layout() {
-  const w = innerWidth, h = innerHeight; mobile = w / h < 0.95 || w < 700;
+  const w = innerWidth, h = innerHeight; mobile = w / h < 0.95 || (w < 700 && h >= 500); short = !mobile && h < 500; // short = phone landscape
   renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 1.5 : 2)); // re-applied on every resize (DPR changes across monitors)
   renderer.setSize(w, h, false); camera.aspect = w / h;
   camera.fov = mobile ? 70 : 62; camera.updateProjectionMatrix();
   const halfW = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 10 * camera.aspect;
   if (mobile) { L.active.set(0, 0.9, 3.6); Object.assign(L, { activeS: 1.55, activeRY: 0.08, R: 2.6, step: 0.62, drop: 0.55, recede: 0.35, hs: 0.8, helixRY: 0 }); L.hx.set(0, -1.2, -4.5); L.exit.set(-halfW * 1.9, 2.5, 1); }
+  else if (short) { const hh = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 10; L.active.set(-halfW * 0.02, -0.05, 2.6); Object.assign(L, { activeS: Math.min(1.75, hh * 0.62), activeRY: 0.18, R: 2.4, step: 0.6, drop: 0.7, recede: 0.45, hs: 0.95, helixRY: -0.35 }); L.hx.set(halfW * 0.55, 2.2, -1.6); L.exit.set(-halfW * 1.6, -0.6, 0.5); }
   else { L.active.set(-halfW * 0.2, -0.1, 2.2); Object.assign(L, { activeS: 1.75, activeRY: 0.22, R: 2.8, step: 0.6, drop: 0.9, recede: 0.45, hs: 1.05, helixRY: -0.35 }); L.hx.set(halfW * 0.42, 2.9, -1.6); L.exit.set(-halfW * 1.6, -0.6, 0.5); }
   helixBG.position.x = mobile ? 0 : 0.8;
 }
@@ -204,6 +206,7 @@ canvas.addEventListener('click', e => {
 });
 addEventListener('keydown', e => {
   if (window.HM.isOpen()) return;
+  if (e.target instanceof Element && e.target.closest('button,a,input,textarea,select,[contenteditable]')) return; // let focused controls handle their own keys
   const base = jump ? jump.to : Math.round(target);
   if (['ArrowDown', 'ArrowRight', 'PageDown', 'j'].includes(e.key)) { jumpTo(base + (e.key === 'PageDown' ? 5 : 1)); e.preventDefault(); }
   else if (['ArrowUp', 'ArrowLeft', 'PageUp', 'k'].includes(e.key)) { jumpTo(base - (e.key === 'PageUp' ? 5 : 1)); e.preventDefault(); }
@@ -274,7 +277,16 @@ async function start(d) {
   D = d; layout();
   const sp = [...document.querySelectorAll('#title span')].find(x => x.innerHTML === '&nbsp;'); if (sp) sp.outerHTML = '<br>';
   try { await Promise.race([document.fonts.load('30px "Press Start 2P"'), new Promise(r => setTimeout(r, 2500))]); } catch (e) {}
-  const h = location.hash.slice(1); setDeck(['characters', 'masks', 'weapons', 'dead'].includes(h) ? h : 'characters');
-  $('#loading').classList.add('done'); clock.getDelta(); requestAnimationFrame(frame);
+  // #deck, #item-id (opens its dossier) or ?deck=&at= (from grid: restore place, don't open)
+  const P = new URLSearchParams(location.search), h = decodeURIComponent(location.hash.slice(1));
+  const decks = ['characters', 'masks', 'weapons', 'dead'];
+  const hit = decks.includes(h) ? null : window.HM.find(h), at = window.HM.find(P.get('at'));
+  const pd = P.get('deck');
+  const dk = hit ? hit.k : decks.includes(h) ? h : decks.includes(pd) ? pd : at ? at.k : 'characters';
+  setDeck(dk);
+  const want = hit || at;
+  if (want) { const j = deck.findIndex(o => o.k === want.k && o.i === want.i); if (j >= 0) { cur = target = j; updateInfo(j, true); } }
+  $('#loading').classList.add('done');
+  if (hit) window.HM.open(hit.k, hit.i); clock.getDelta(); requestAnimationFrame(frame);
 }
 if (window.HM && window.HM.D) start(window.HM.D); else addEventListener('hmdata', () => start(window.HM.D), { once: true });
