@@ -80,3 +80,20 @@ footer{max-width:1000px;margin:20px auto 40px;padding:18px;font-size:18px;opacit
 
 .card.here{outline:3px solid var(--yel);outline-offset:3px}
 @media(max-width:600px){.modal{padding:34px 28px}}
+/* ---- SPIRAL MODE button ---- */
+.spiral-wrap{display:flex;justify-content:center;margin:18px 10px 6px;position:relative;z-index:20}
+.spiral-btn{display:inline-flex;align-items:center;gap:16px;padding:14px 26px 14px 18px;text-decoration:none;color:#fff;background:linear-gradient(90deg,#1a0330e6,#2a0646e6);border:3px solid var(--pink);transform:rotate(-2deg);
+ animation:spGlow 1.6s ease-in-out infinite,spHue 6s linear infinite;box-shadow:0 0 18px var(--pink),0 0 42px #ff2a8a88,inset 0 0 18px #ff2a8a66,6px 6px 0 #000}
+.spiral-btn:hover,.spiral-btn:focus-visible{transform:rotate(-2deg) scale(1.06);outline:none;background:linear-gradient(90deg,#ff2a8a,#7a2cff)}
+.spiral-txt{font-family:'Press Start 2P';font-size:clamp(18px,3.4vw,34px);letter-spacing:2px;display:inline-flex}
+.spiral-txt span{display:inline-block;animation:spWave 1.2s ease-in-out infinite;text-shadow:3px 0 var(--pink),-3px 0 var(--cyan),0 0 14px #fff}
+.spiral-btn small{font-family:'VT323';font-size:20px;color:var(--yel);align-self:flex-end}
+.spiral-ico{width:30px;height:46px;flex:none;filter:drop-shadow(0 0 6px var(--cyan))}
+.spiral-ico .spin{transform-origin:20px 30px;animation:spSpin .9s ease-in-out infinite alternate}
+@keyframes spWave{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@keyframes spGlow{0%,100%{box-shadow:0 0 14px var(--pink),0 0 30px #ff2a8a77,inset 0 0 12px #ff2a8a55,6px 6px 0 #000}50%{box-shadow:0 0 26px var(--pink),0 0 70px #ff2a8acc,inset 0 0 26px #ff2a8aaa,6px 6px 0 #000}}
+@keyframes spHue{to{filter:hue-rotate(360deg)}}
+@keyframes spSpin{from{transform:scaleX(1)}to{transform:scaleX(-1)}}
+@media(max-width:600px){.spiral-wrap{position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));margin:0;z-index:55}.spiral-wrap .spiral-btn{background:linear-gradient(90deg,#1a0330,#2a0646)}body:not(.helix-page){padding-bottom:84px}.spiral-btn{padding:10px 14px;gap:10px;width:100%;justify-content:center;transform:none}.spiral-btn:hover{transform:scale(1.02)}.spiral-btn small{display:none}.spiral-ico{width:22px;height:34px}}
+@media(prefers-reduced-motion:reduce){.spiral-btn,.spiral-txt span,.spiral-ico .spin{animation:none}}
+body:has(.modal:not([hidden])) .spiral-wrap{display:none}

@@ -1,0 +1,39 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>HOTLINE MIAMI ARCHIVE // 3D Tape Deck</title>
+<script>
+(function(){var q=new URLSearchParams(location.search);if(q.get('grid')==='1')return location.replace('index.html'+location.hash);
+var rm=matchMedia('(prefers-reduced-motion: reduce)').matches&&q.get('3d')!=='1';var gl=false;try{var c=document.createElement('canvas');gl=!!(c.getContext('webgl2')||c.getContext('webgl'))}catch(e){}
+if(!gl||rm)location.replace('index.html'+location.search+location.hash);})();
+</script>
+<meta name="description" content="Fan archive of every character, mask and weapon in Hotline Miami and Hotline Miami 2: Wrong Number.">
+<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#ff2a8a"><link rel="icon" href="icons/icon-192.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="HM Archive">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Monoton&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css"><link rel="stylesheet" href="helix.css"><link rel="canonical" href="spiral.html">
+<script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
+</head><body class="helix-page">
+<canvas id="gl" aria-label="3D card deck. Scroll, swipe or use arrow keys; Enter opens the active file."></canvas>
+<div class="grain"></div><div class="scan"></div><div class="vignette"></div>
+<div class="vhs-osd"><span class="play">&#9654; PLAY</span><span id="clock">SP 0:00:00</span></div>
+<div class="vhs-osd right"><span id="ch">CH 01</span><span class="rec">● REC</span></div>
+<aside class="hx-menu">
+  <h1 class="title" id="title" aria-label="Hotline Miami">HOTLINE MIAMI</h1>
+  <p class="hx-sub">ARCHIVE // 1 &amp; 2: WRONG NUMBER</p>
+  <nav class="hx-decks" id="decks">
+    <button data-deck="characters" class="on">CHARACTERS</button>
+    <button data-deck="masks">MASKS</button>
+    <button data-deck="weapons">WEAPONS</button>
+    <button data-deck="dead">BODY COUNT</button>
+  </nav>
+  <div class="hx-info" aria-live="polite"><div id="hxIdx">01 / 54</div><div id="hxName">…</div><div id="hxTags"></div>
+    <button id="hxOpen" class="hx-open">▸ OPEN FILE</button></div>
+  <a class="hx-grid" id="toGrid" href="index.html">▦ GRID VIEW / SEARCH</a>
+  <p class="hx-hint">SCROLL · SWIPE · ↑↓ · ENTER</p>
+</aside>
+<div id="fx" class="fx" aria-hidden="true"></div>
+<div id="loading" class="hx-loading">REWINDING TAPE…</div>
+<div id="modal" class="modal" hidden><div class="dossier tape" role="dialog" aria-modal="true"><button class="x" aria-label="Close">✕</button><div id="mbody"></div></div></div>
+<footer class="hx-foot">Fan site · Hotline Miami © Dennaton Games / Devolver Digital · data &amp; art: <a href="https://hotlinemiami.fandom.com" target="_blank" rel="noopener">Hotline Miami Wiki</a> (CC BY-SA)</footer>
+<script src="app.js"></script>
+<script type="module" src="helix.js"></script>
+</body></html>

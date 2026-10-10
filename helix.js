@@ -1,31 +1,74 @@
 import * as THREE from 'three';
 import { createGlitchMaterial } from './shaders/glitch.js';
 import { createSmokeBackground } from './shaders/smoke_v2.js';
+import { createFX } from './fx.js';
 
 const $ = s => document.querySelector(s);
 const canvas = $('#gl');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: devicePixelRatio < 1.5, alpha: false, powerPreference: 'high-performance' });
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 const scene = new THREE.Scene(); scene.background = null;
-const camera = new THREE.PerspectiveCamera(62, 1, 0.1, 100);
+const camera = new THREE.PerspectiveCamera(62, 1, 0.5, 60);
 camera.position.set(0, 0, 10);
 const smoke = createSmokeBackground(renderer, scene);
 
-// ---------- particle double helix of cubes ----------
-const N = 360, cubeGeo = new THREE.BoxGeometry(0.07, 0.07, 0.07);
-const cubeMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false });
-const cubes = new THREE.InstancedMesh(cubeGeo, cubeMat, N);
-const dummy = new THREE.Object3D(), col = new THREE.Color();
-const PAL = [0xff2a8a, 0x16f4ff, 0xb45cff, 0xffe14d];
-for (let i = 0; i < N; i++) {
-  const strand = i % 2, k = Math.floor(i / 2), t = k / (N / 2);
-  const a = t * Math.PI * 8 + strand * Math.PI, y = (t - 0.5) * 18;
-  dummy.position.set(Math.cos(a) * 1.6, y, Math.sin(a) * 1.6);
-  dummy.rotation.set(a, a * 0.5, 0); dummy.updateMatrix(); cubes.setMatrixAt(i, dummy.matrix);
-  cubes.setColorAt(i, col.set(PAL[(strand * 2 + (k % 7 === 0 ? 1 : 0)) % 4]));
-}
-const helixBG = new THREE.Group(); helixBG.add(cubes); helixBG.position.set(0.5, 0, -14); helixBG.rotation.z = 0.25;
+// ---------- background double helix (infinite, scroll-driven, recycled) ----------
+// Each slot k shows global segment g = k + floor(off); its position depends only on g and `off`,
+// so a segment never jumps: when it leaves one end the slot is recycled at the other end, already faded to 0.
+const HX_SEG = 120, HX_DY = 0.24, HX_DA = 0.33, HX_R = 1.7, RUNG_EVERY = 4, RUNG_N = 5;
+const HX_RUNGS = Math.ceil(HX_SEG / RUNG_EVERY) * RUNG_N, HX_TOTAL = HX_SEG * 2 + HX_RUNGS;
+const cubeGeo = new THREE.BoxGeometry(0.11, 0.11, 0.11);
+const cubeMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
+const cubes = new THREE.InstancedMesh(cubeGeo, cubeMat, HX_TOTAL);
+cubes.instanceMatrix.setUsage(THREE.DynamicDrawUsage); cubes.frustumCulled = false;
+cubes.setColorAt(0, new THREE.Color()); cubes.instanceColor.setUsage(THREE.DynamicDrawUsage);
+// glow sprites on the strand cubes
+const glowCan = document.createElement('canvas'); glowCan.width = glowCan.height = 64;
+{ const g = glowCan.getContext('2d'), gr = g.createRadialGradient(32, 32, 0, 32, 32, 32); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(0.25, 'rgba(255,255,255,.45)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); }
+const glowGeo = new THREE.BufferGeometry();
+const gPos = new Float32Array(HX_SEG * 2 * 3), gCol = new Float32Array(HX_SEG * 2 * 3);
+glowGeo.setAttribute('position', new THREE.BufferAttribute(gPos, 3).setUsage(THREE.DynamicDrawUsage));
+glowGeo.setAttribute('color', new THREE.BufferAttribute(gCol, 3).setUsage(THREE.DynamicDrawUsage));
+const glows = new THREE.Points(glowGeo, new THREE.PointsMaterial({ size: 0.9, map: new THREE.CanvasTexture(glowCan), vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true }));
+glows.frustumCulled = false;
+const helixBG = new THREE.Group(); helixBG.add(cubes, glows); helixBG.position.set(0.5, 0, -16); helixBG.rotation.z = 0.22;
 scene.add(helixBG);
+const PINK = new THREE.Color(0xff2a8a), CYAN = new THREE.Color(0x16f4ff), VIOLET = new THREE.Color(0xb45cff);
+const dummy = new THREE.Object3D(), col = new THREE.Color(), col2 = new THREE.Color();
+let hxOff = 0, hxVel = 0, hxSpin = 0;
+function updateHelixBG(t, dt, cardVel) {
+  // velocity: gentle idle drift + scroll velocity, damped so it eases in/out with no jumps
+  const want = 0.9 + THREE.MathUtils.clamp(cardVel, -14, 14) * 1.6;
+  hxVel += (want - hxVel) * (1 - Math.exp(-3 * dt));
+  hxOff += hxVel * dt; hxSpin += (0.25 + Math.abs(hxVel) * 0.04) * dt;
+  const base = Math.floor(hxOff), fr = hxOff - base, half = HX_SEG / 2;
+  let n = 0, gi = 0;
+  for (let k = 0; k < HX_SEG; k++) {
+    const g = base + k, y = (k - fr - half) * HX_DY;
+    const edge = Math.min(k - fr, HX_SEG - 1 - (k - fr)) / 18;                     // fade both ends to 0
+    const fade = THREE.MathUtils.clamp(edge, 0, 1); const f2 = fade * fade * (3 - 2 * fade);
+    const pulse = 0.75 + 0.25 * Math.sin(t * 3 - g * 0.35);
+    const ang = g * HX_DA + hxSpin, grad = 0.5 + 0.5 * Math.sin(g * 0.06);         // pink<->cyan gradient along the strand
+    for (let s = 0; s < 2; s++) {
+      const a = ang + s * Math.PI, x = Math.cos(a) * HX_R, z = Math.sin(a) * HX_R;
+      dummy.position.set(x, y, z); dummy.rotation.set(a, g * 0.2, 0); dummy.scale.setScalar(0.8 + 0.4 * pulse); dummy.updateMatrix();
+      cubes.setMatrixAt(n, dummy.matrix);
+      col.copy(PINK).lerp(CYAN, s ? 1 - grad : grad).multiplyScalar(f2 * pulse * (0.75 + 0.25 * Math.sign(z + 0.001)));
+      cubes.setColorAt(n++, col);
+      gPos[gi] = x; gPos[gi + 1] = y; gPos[gi + 2] = z; gCol[gi] = col.r * 0.55; gCol[gi + 1] = col.g * 0.55; gCol[gi + 2] = col.b * 0.55; gi += 3;
+    }
+    if (((g % RUNG_EVERY) + RUNG_EVERY) % RUNG_EVERY === 0) { // rung between strands
+      for (let r = 1; r <= RUNG_N; r++) {
+        const u = r / (RUNG_N + 1), x = Math.cos(ang) * HX_R * (1 - 2 * u), z = Math.sin(ang) * HX_R * (1 - 2 * u);
+        dummy.position.set(x, y, z); dummy.rotation.set(0, ang, 0); dummy.scale.setScalar(0.45); dummy.updateMatrix();
+        cubes.setMatrixAt(n, dummy.matrix); cubes.setColorAt(n++, col2.copy(VIOLET).multiplyScalar(f2 * 0.6 * pulse));
+      }
+    }
+  }
+  cubes.count = n;
+  cubes.instanceMatrix.needsUpdate = true; cubes.instanceColor.needsUpdate = true;
+  glowGeo.attributes.position.needsUpdate = true; glowGeo.attributes.color.needsUpdate = true;
+}
 
 // ---------- card textures (lazy) ----------
 const CW = 512, CH = 704, imgCache = new Map(), texCache = new Map();
@@ -117,7 +160,7 @@ function updateInfo(i, force) {
   const o = deck[i], x = o.x;
   $('#hxIdx').textContent = `${String(i + 1).padStart(2, '0')} / ${String(deck.length).padStart(2, '0')} ${deckName === 'dead' ? 'BODIES' : deckName.toUpperCase()}`;
   $('#hxName').textContent = x.name;
-  const gl = $('#toGrid'); if (gl) gl.href = `grid.html?deck=${deckName}&at=${encodeURIComponent(window.HM.slug(x))}`;
+  const gl = $('#toGrid'); if (gl) gl.href = `index.html?deck=${deckName}&at=${encodeURIComponent(window.HM.slug(x))}`;
   const st = x.status ? `<span class="tag ${x.status.startsWith('DEAD') ? 'dead' : x.status === 'ALIVE' ? 'alive' : 'unk'}">${x.status}</span>` : '';
   $('#hxTags').innerHTML = st + (x.games || (x.entries || []).map(e => e.game).filter((g, j, a) => a.indexOf(g) === j)).map(g => `<span class="tag">${g}</span>`).join('') + (x.type ? `<span class="tag">${x.type.toUpperCase()}</span>` : '');
 }
@@ -136,7 +179,7 @@ function layout() {
   if (mobile) { L.active.set(0, 0.9, 3.6); Object.assign(L, { activeS: 1.55, activeRY: 0.08, R: 2.6, step: 0.62, drop: 0.55, recede: 0.35, hs: 0.8, helixRY: 0 }); L.hx.set(0, -1.2, -4.5); L.exit.set(-halfW * 1.9, 2.5, 1); }
   else if (short) { const hh = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 10; L.active.set(-halfW * 0.02, -0.05, 2.6); Object.assign(L, { activeS: Math.min(1.75, hh * 0.62), activeRY: 0.18, R: 2.4, step: 0.6, drop: 0.7, recede: 0.45, hs: 0.95, helixRY: -0.35 }); L.hx.set(halfW * 0.55, 2.2, -1.6); L.exit.set(-halfW * 1.6, -0.6, 0.5); }
   else { L.active.set(-halfW * 0.2, -0.1, 2.2); Object.assign(L, { activeS: 1.75, activeRY: 0.22, R: 2.8, step: 0.6, drop: 0.9, recede: 0.45, hs: 1.05, helixRY: -0.35 }); L.hx.set(halfW * 0.42, 2.9, -1.6); L.exit.set(-halfW * 1.6, -0.6, 0.5); }
-  helixBG.position.x = mobile ? 0 : 0.8;
+  helixBG.position.x = mobile ? 0 : short ? 1.5 : 0.8;
 }
 let rzPending = false;
 addEventListener('resize', () => { if (rzPending) return; rzPending = true; requestAnimationFrame(() => { rzPending = false; layout(); }); });
@@ -221,6 +264,7 @@ window.HX = {
   state: () => ({ cur, target, vel: smVel, n: deck.length, jumping: !!jump, textures: texCache.size, dpr: renderer.getPixelRatio() })
 };
 
+const fx = createFX($('#fx'), () => D);
 // ---------- loop ----------
 const clock = new THREE.Clock();
 const VCAP = 0.75, CARDS_PER_SEC_MAX = 12;
@@ -268,7 +312,8 @@ function frame() {
     m.material.uniforms.uTime.value = t; m.material.uniforms.uVelocity.value = smVel;
   }
   updateInfo(Math.round(cur));
-  helixBG.rotation.y = t * 0.25 + cur * 0.35; helixBG.position.y = Math.sin(t * 0.3) * 0.4 + ((cur * 0.6) % 6) - 3;
+  updateHelixBG(t, dt, jump && jump.xfade ? 0 : vel);
+  fx.update(t, dt, cur, jump && jump.xfade ? 0 : vel);
   smoke.update(t);
   renderer.render(scene, camera);
   requestAnimationFrame(frame);

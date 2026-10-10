@@ -68,7 +68,7 @@ $('#grid')?.addEventListener('click',e=>{const c=e.target.closest('.card');if(c)
 function setTab(k){tab=k;sub='all';document.querySelectorAll('[data-tab]').forEach(x=>x.classList.toggle('on',x.dataset.tab===k));render();sync3d()}
 $('#menu')?.addEventListener('click',e=>{const b=e.target.closest('[data-tab]');if(b)setTab(b.dataset.tab)});
 // grid -> 3D link carries the current deck and last opened/focused item
-let gridAt='';function sync3d(){const l=$('#to3d');if(l)l.href=`index.html?3d=1&deck=${tab}`+(gridAt?`&at=${encodeURIComponent(gridAt)}`:'');}
+let gridAt='';function sync3d(){const l=$('#to3d');if(l)l.href=`spiral.html?3d=1&deck=${tab}`+(gridAt?`&at=${encodeURIComponent(gridAt)}`:'');}
 $('#grid')?.addEventListener('focusin',e=>{const c=e.target.closest('.card');if(c){gridAt=c.dataset.id;sync3d()}});
 $('#gamef')?.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;game=b.dataset.g;document.querySelectorAll('#gamef button').forEach(x=>x.classList.toggle('on',x===b));render()});
 $('#subf')?.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;sub=b.dataset.s;render()});
@@ -82,7 +82,8 @@ let ac,timer;if($('#music'))$('#music').onclick=function(){
   this.textContent='MUSIC: ON';this.setAttribute('aria-pressed','true')};
 window.HM={open:(k,i)=>{tab=k;open(i)},close,isOpen:()=>!$('#modal').hidden,slug,find:h=>{h=decodeURIComponent(h||'').toLowerCase();if(!h||!D)return null;for(const k of['characters','masks','weapons']){const i=D[k].findIndex(x=>slug(x)===h||x.name.toLowerCase()===h);if(i>=0)return{k,i}}return null}};
 fetch('data.json').then(r=>r.json()).then(d=>{D=d;window.HM.D=d;window.dispatchEvent(new Event('hmdata'));if(!$('#grid'))return;
-  const P=new URLSearchParams(location.search),hit=window.HM.find(location.hash.slice(1));
+  const P=new URLSearchParams(location.search),hh=decodeURIComponent(location.hash.slice(1)),hit=window.HM.find(hh);
+  if(['characters','masks','weapons','dead'].includes(hh)&&!P.get('deck'))P.set('deck',hh); // old index.html#deck links
   if(hit){setTab(hit.k);gridAt=slug(d[hit.k][hit.i]);sync3d();open(hit.i);return}
   // arriving from 3D: restore deck and scroll to the card without opening it
   const dk=P.get('deck');setTab(['characters','masks','weapons'].includes(dk)?dk:dk==='dead'?'characters':'characters');

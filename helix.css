@@ -46,3 +46,21 @@
  .hx-foot{display:none}
  .vhs-osd{font-size:16px}
 }
+/* ---- scroll FX overlay ---- */
+.fx{position:fixed;inset:0;z-index:5;pointer-events:none;overflow:hidden;contain:strict}
+.fx-el{position:absolute;left:50%;top:50%;will-change:transform,opacity}
+.fx-el[hidden]{display:none}
+.fx-sprite{width:96px;height:96px;margin:-48px 0 0 -48px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(3px 3px 0 #000) drop-shadow(0 0 10px #ff2a8a)}
+.fx-sprite.weapon{width:84px;height:84px;margin:-42px 0 0 -42px;filter:drop-shadow(2px 2px 0 #000) drop-shadow(0 0 8px #16f4ff)}
+.fx-text{font-family:'Press Start 2P';white-space:nowrap;transform-origin:center;translate:-50% -50%;color:#fff;-webkit-text-stroke:2px #000;paint-order:stroke fill}
+.fx-text.pts{font-size:22px;color:#ffe14d;text-shadow:3px 3px 0 #ff2a8a,6px 6px 0 #000}
+.fx-text.kill{font-size:34px;color:#ff2a8a;text-shadow:3px 3px 0 #16f4ff,6px 6px 0 #000;font-style:italic}
+.fx-text.combo{font-size:40px;color:#16f4ff;text-shadow:3px 3px 0 #ff2a8a,6px 6px 0 #000,0 0 20px #ff2a8a}
+.fx-phone{display:flex;flex-direction:column;align-items:center;filter:drop-shadow(4px 4px 0 #000) drop-shadow(0 0 16px #ff2a8a)}
+.fx-phone p{font-family:'VT323';font-size:34px;color:#ff2a8a;text-align:center;margin:6px 0 0;line-height:1;text-shadow:2px 0 #16f4ff,-2px 0 #fff;white-space:nowrap}
+.fx-glitch{inset:0;left:0;top:0;mix-blend-mode:screen;background:
+ linear-gradient(transparent calc(var(--y) - 6%),#ff2a8a66 calc(var(--y) - 6%),#ff2a8a66 calc(var(--y) - 3%),transparent calc(var(--y) - 3%),transparent var(--y),#16f4ff66 var(--y),#16f4ff66 calc(var(--y) + 2%),transparent calc(var(--y) + 2%)),
+ repeating-linear-gradient(0deg,#fff1 0 2px,transparent 2px 5px)}
+body.fx-shake #gl{animation:fxShake .38s steps(5)}
+@keyframes fxShake{0%{transform:translate(0)}25%{transform:translate(-6px,2px)}50%{transform:translate(5px,-3px)}75%{transform:translate(-3px,1px)}100%{transform:translate(0)}}
+@media (max-width:700px){.fx-sprite{width:72px;height:72px;margin:-36px 0 0 -36px}.fx-text.pts{font-size:16px}.fx-text.kill{font-size:24px}.fx-text.combo{font-size:26px}.fx-phone p{font-size:26px}}
