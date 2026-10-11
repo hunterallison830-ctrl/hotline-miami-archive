@@ -43,10 +43,11 @@ void main() {
 
   vec3 col = mix(purple, pink, smoothstep(0.3, 0.7, q.x));
   col = mix(col, cyan, smoothstep(0.55, 0.85, q.y) * 0.6);
-  col *= smoothstep(0.25, 0.85, n) * 0.55;
+  col *= smoothstep(0.25, 0.85, n) * 0.64;
+  col += vec3(0.035, 0.012, 0.06); // lifted floor so the void isn't pure black
 
   // vignette keeps cards readable
-  float vig = smoothstep(1.2, 0.3, length(vUv - 0.5) * 1.6);
+  float vig = mix(0.18, 1.0, smoothstep(1.3, 0.3, length(vUv - 0.5) * 1.6));
   col *= vig;
   gl_FragColor = vec4(col, 1.0);
 }`;

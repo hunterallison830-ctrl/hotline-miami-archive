@@ -40,7 +40,7 @@ function open(i){
     <span class="tag">${x.role.toUpperCase()}</span>${x.games.map(g=>`<span class="tag">${g}</span>`).join('')}
     <div class="death"><b>STATUS:</b> ${stTxt(x.status)}${x.status==='DEAD?'?' (presumed, not confirmed)':''}<br><b>FATE:</b> ${esc(x.death)}</div></div>
     <div class="stamp ${stCls(x.status)}">${x.status==='DEAD?'?'DEAD?':x.status==='UNKNOWN'?'???':x.status}</div></div>
-    <h3>// FILE</h3><p>${esc(x.desc)}</p>
+    <h3>// FILE</h3>${x.quote?`<blockquote class="pull"><p>&ldquo;${esc(x.quote)}&rdquo;</p><cite>&mdash; ${esc(x.name)} <small>(source: ${esc(x.quoteSrc||'wiki')})</small></cite></blockquote>`:''}<p>${esc(x.desc)}</p>
     <h3>// MASKS</h3>${ms.length?`<div class="masks">${ms.map(maskBox).join('')}</div>`:'<p>No animal mask worn.</p>'}
     <h3>// STORY</h3>${x.story.length?storyHtml(x.story):'<p>No further story details on record.</p>'}`;
   }else if(tab==='masks'){

@@ -63,7 +63,7 @@
  repeating-linear-gradient(0deg,#fff1 0 2px,transparent 2px 5px)}
 body.fx-shake #gl{animation:fxShake .38s steps(5)}
 @keyframes fxShake{0%{transform:translate(0)}25%{transform:translate(-6px,2px)}50%{transform:translate(5px,-3px)}75%{transform:translate(-3px,1px)}100%{transform:translate(0)}}
-@media (max-width:700px){.fx-sprite{width:72px;height:72px;margin:-36px 0 0 -36px}.fx-text.pts{font-size:16px}.fx-text.kill{font-size:24px}.fx-text.combo{font-size:26px}.fx-phone p{font-size:26px}}
+@media (max-width:700px){.fx-sprite{width:72px;height:72px;margin:-36px 0 0 -36px}.fx-text.pts{font-size:20px}.fx-text.kill{font-size:24px}.fx-text.combo{font-size:26px}.fx-phone p{font-size:26px}}
 .hx-play{display:block;width:max-content;margin-top:8px;border-color:var(--yel);color:var(--yel)}.hx-play:hover{background:var(--yel)}
 @media (max-aspect-ratio:19/20),(max-width:700px){.hx-grid.hx-play{top:78px;margin:0}}
 
@@ -94,3 +94,5 @@ body.fx-shake #gl{animation:fxShake .38s steps(5)}
 }
 /* phone landscape: active deck button no longer slides into its neighbour */
 @media (max-height:500px) and (orientation:landscape){ .hx-decks button.on,.hx-decks button:hover{transform:none} }
+
+.hx-menu .title,.hx-decks button,.hx-info,.vhs-osd,.hx-open,.hx-grid{filter:brightness(1.12) saturate(1.08)}

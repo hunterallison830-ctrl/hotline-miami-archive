@@ -19,9 +19,10 @@ export function createFX(root, getData) {
     const a = el.animate(frames, { fill: 'both', ...opts });
     let done = false; a.onfinish = a.oncancel = () => { if (done) return; done = true; el.hidden = true; el._busy = false; active--; a.cancel(); };
   }
+  const cache = {};
   function sprite(kind, dir) {
     const D = getData(); if (!D) return;
-    const list = (kind === 'mask' ? D.masks : D.weapons).filter(x => x.img); if (!list.length) return;
+    const list = kind === 'mask' ? (cache.m || (cache.m = D.masks.filter(x => x.img))) : (cache.w || (cache.w = D.weapons.filter(x => x.img))); if (!list.length) return;
     const el = free(sprites); if (!el) return;
     const it = pick(list); el.src = it.img; el.alt = ''; el.className = 'fx-el fx-sprite ' + kind;
     const W = innerWidth, H = innerHeight;
@@ -42,7 +43,7 @@ export function createFX(root, getData) {
   function text(str, cls, dir, big) {
     const el = free(texts); if (!el) return;
     el.textContent = str; el.className = 'fx-el fx-text ' + cls;
-    const x = rnd(-0.32, 0.32) * innerWidth, y = rnd(-0.3, 0.15) * innerHeight, r = rnd(-12, 12), s = big ? 1.4 : 1;
+    const ph = innerWidth < 700, x = rnd(-0.32, 0.32) * innerWidth, y = (ph ? (Math.random() < .5 ? rnd(-0.42, -0.3) : rnd(0.22, 0.32)) : rnd(-0.3, 0.15)) * innerHeight, r = rnd(-12, 12), s = big ? 1.4 : 1;
     run(el, dir > 0
       ? [{ transform: `translate(${x}px,${y}px) scale(0) rotate(${r}deg)`, opacity: 1 }, { transform: `translate(${x}px,${y}px) scale(${1.45 * s}) rotate(${-r}deg)`, offset: 0.18 }, { transform: `translate(${x}px,${y - 10}px) scale(${s}) rotate(${r * 0.5}deg)`, opacity: 1, offset: 0.7 }, { transform: `translate(${x}px,${y - 40}px) scale(${s})`, opacity: 0 }]
       : [{ transform: `translate(${x}px,${y + 80}px) scale(${0.9 * s})`, opacity: 0 }, { opacity: 1, offset: 0.2 }, { transform: `translate(${x}px,${y - innerHeight * 0.35}px) scale(${0.6 * s})`, opacity: 0 }],
@@ -66,11 +67,12 @@ export function createFX(root, getData) {
     const now = performance.now();
     combo = now - comboT < 1800 ? combo + 1 : 1; comboT = now;
     const r = Math.random();
-    if (r < 0.4) sprite('mask', dir); else if (r < 0.75) sprite('weapon', dir);
-    else if (Math.random() < 0.35) text('KILL!', 'kill', dir);
-    else text('+' + pick([100, 200, 300, 400, 500, 800, 1000]) + 'pts', 'pts', dir);
-    if (combo >= 3 && now - lastCombo > 1500 && active < MAX) { lastCombo = now; text('COMBO x' + combo, 'combo', dir, true); }
-    if (speed > 9) burst();
+    const cue = k => window.SFX && SFX.play('fx', k);
+    if (r < 0.4) { sprite('mask', dir); cue('sprite'); } else if (r < 0.75) { sprite('weapon', dir); cue('sprite'); }
+    else if (Math.random() < 0.35) { text('KILL!', 'kill', dir); cue('kill'); }
+    else { text('+' + pick([100, 200, 300, 400, 500, 800, 1000]) + 'pts', 'pts', dir); cue('pts'); }
+    if (combo >= 3 && now - lastCombo > 1500 && active < MAX) { lastCombo = now; text('COMBO x' + combo, 'combo', dir, true); cue('combo'); }
+    if (speed > 9) { burst(); cue('burst'); }
   }
   return {
     burst,
@@ -82,7 +84,7 @@ export function createFX(root, getData) {
       if (document.hidden) return;
       const now = performance.now(), sp = Math.abs(vel);
       if (sp > 9) burst();
-      if (dist > 14 && now - lastPhone > 12000 && sp > 1) { dist = 0; lastPhone = now; callPhone(Math.sign(d) || 1); }
+      if (dist > 14 && now - lastPhone > 12000 && sp > 1) { dist = 0; lastPhone = now; callPhone(Math.sign(d) || 1); window.SFX && SFX.play('fx', 'phone'); }
       if (Math.abs(acc) >= 0.9 && now - lastSpawn > MIN_GAP && active < MAX) { lastSpawn = now; spawn(Math.sign(acc), sp); acc = 0; }
       if (Math.abs(acc) > 3) acc = Math.sign(acc) * 3; // don't bank a backlog while throttled
     },

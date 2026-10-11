@@ -6,11 +6,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#ff2a8a"><link rel="icon" href="icons/icon-192.png">
 <style>
-html,body{margin:0;height:100%;background:#0b0216;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:none}
+html,body{-webkit-touch-callout:none;margin:0;height:100%;background:#160630;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;overscroll-behavior:none}
 #c{position:fixed;inset:0;width:100vw;height:100vh;height:100dvh;display:block;cursor:crosshair;image-rendering:pixelated}
-.scan{position:fixed;inset:0;pointer-events:none;z-index:5;background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
-.vig{position:fixed;inset:0;pointer-events:none;z-index:4;box-shadow:inset 0 0 160px #000}
+.scan{position:fixed;inset:0;pointer-events:none;z-index:5;background:repeating-linear-gradient(0deg,rgba(0,0,0,.2) 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
+.vig{position:fixed;inset:0;pointer-events:none;z-index:4;box-shadow:inset 0 0 140px #000b}
 .back{position:fixed;top:10px;left:10px;z-index:10;font:10px 'Press Start 2P';color:#16f4ff;text-decoration:none;border:2px solid #16f4ff;padding:6px 8px;background:#000a}
+.mute{position:fixed;top:10px;left:calc(118px + env(safe-area-inset-left));z-index:10;width:44px;height:44px;margin-top:-6px;font:16px sans-serif;color:#16f4ff;border:2px solid #16f4ff;background:#000a;cursor:pointer;padding:0;touch-action:manipulation}
+@media (pointer:coarse){.mute{top:66px;margin-top:0;left:auto;right:calc(92px + env(safe-area-inset-right))}}
 .touch{position:fixed;inset:0;z-index:8;display:none}
 body.is-touch .touch{display:block}
 .tbtn{position:absolute;right:calc(18px + env(safe-area-inset-right));bottom:calc(150px + env(safe-area-inset-bottom));width:74px;height:74px;border-radius:50%;border:3px solid #ffe14d;background:#ffe14d22;color:#ffe14d;font:9px 'Press Start 2P';display:grid;place-items:center;box-shadow:0 0 14px #ffe14d88}
@@ -25,8 +27,8 @@ body.is-touch .touch{display:block}
 body[data-mode=select] .tbtn,body[data-mode=results] .tbtn:not(#tR),body[data-mode=paused] .tbtn{display:none}
 </style></head><body>
 <canvas id="c" aria-label="Mini-game canvas. WASD to move, mouse to aim, click to attack, right-click or Space to throw or pick up, R to restart."></canvas>
-<div class="vig"></div><div class="scan"></div>
-<a class="back" href="index.html">◂ ARCHIVE</a>
+<div id="sab" style="position:fixed;bottom:0;left:0;width:0;height:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none"></div><div class="vig"></div><div class="scan"></div>
+<a class="back" href="index.html">◂ ARCHIVE</a><button class="mute" id="tMute" type="button" aria-label="Mute / unmute sound (N). Volume: - and +">🔊</button>
 <div class="touch" id="touch"><div class="tbtn pw" id="tPow">POWER</div><div class="tbtn" id="tThrow">THROW</div><div class="tbtn r" id="tR" aria-label="Restart (tap twice)">R</div><div class="tbtn r p" id="tP" aria-label="Pause">II</div></div>
-<script src="game.js"></script>
+<script src="gameaudio.js"></script><script src="game.js"></script>
 </body></html>

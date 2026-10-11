@@ -1,4 +1,4 @@
-:root{--pink:#ff2a8a;--cyan:#16f4ff;--purple:#7b2cff;--yel:#ffe14d;--bg:#120321;--ink:#fff}
+:root{--pink:#ff2a8a;--cyan:#16f4ff;--purple:#7b2cff;--yel:#ffe14d;--bg:#1b0732;--ink:#fff}
 *{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'VT323',monospace;font-size:20px;overflow-x:hidden}
 a{color:var(--cyan)}
 .bg{position:fixed;inset:0;z-index:-3;background:linear-gradient(180deg,#1a0433 0%,#5a0b5e 45%,#ff2a8a 62%,#2a0640 63%,#0d0219 100%);animation:hue 18s linear infinite}
@@ -6,12 +6,12 @@ a{color:var(--cyan)}
 .sun{position:absolute;left:50%;top:30%;width:46vmin;height:46vmin;transform:translateX(-50%);border-radius:50%;background:repeating-linear-gradient(180deg,#ffe14d 0 9%,#ff2a8a 9% 12%);opacity:.55;filter:blur(1px);mask:linear-gradient(#000 60%,transparent 100%)}
 .grid{position:absolute;left:-50%;right:-50%;bottom:0;height:40%;background:linear-gradient(transparent 0 94%,var(--cyan) 94%) 0 0/100% 40px,linear-gradient(90deg,transparent 0 97%,var(--cyan) 97%) 0 0/60px 100%;transform:perspective(300px) rotateX(60deg);transform-origin:bottom;opacity:.35;animation:gridmove 2s linear infinite}
 @keyframes gridmove{to{background-position:0 40px,0 0}}
-.grain{position:fixed;inset:-50%;z-index:50;pointer-events:none;opacity:.13;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");animation:grain .5s steps(4) infinite}
+.grain{position:fixed;inset:-10%;z-index:50;pointer-events:none;opacity:.13;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");animation:grain .5s steps(4) infinite}
 @keyframes grain{0%{transform:translate(0,0)}25%{transform:translate(-5%,3%)}50%{transform:translate(4%,-6%)}75%{transform:translate(-3%,5%)}}
-.scan{position:fixed;inset:0;z-index:51;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.28) 0 2px,transparent 2px 4px)}
+.scan{position:fixed;inset:0;z-index:51;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(0,0,0,.2) 0 2px,transparent 2px 4px)}
 .scan::after{content:"";position:absolute;left:0;right:0;height:120px;background:linear-gradient(transparent,rgba(255,255,255,.06),transparent);animation:roll 7s linear infinite}
 @keyframes roll{from{top:-120px}to{top:100%}}
-.vignette{position:fixed;inset:0;z-index:49;pointer-events:none;box-shadow:inset 0 0 160px 40px rgba(0,0,0,.85)}
+.vignette{position:fixed;inset:0;z-index:49;pointer-events:none;box-shadow:inset 0 0 150px 30px rgba(0,0,0,.68)}
 .vhs-osd{position:fixed;top:12px;left:16px;z-index:60;font-family:'VT323';font-size:26px;color:#fff;text-shadow:2px 0 var(--pink),-2px 0 var(--cyan);display:flex;gap:18px;pointer-events:none}
 .vhs-osd.right{left:auto;right:16px}.rec{color:#ff3b3b;animation:blink 1s steps(2) infinite}
 @keyframes blink{50%{opacity:0}}
@@ -141,4 +141,46 @@ body:has(.modal:not([hidden])) .spiral-wrap{display:none}
 }
 .title span{white-space:pre}
 @media (max-height:500px) and (pointer:coarse) and (orientation:landscape){ .hero .title{font-size:36px;margin:8px 0 12px;transform:rotate(-3deg)} }
-.title .sp{width:.9em}
+.title .sp{width:.5em}
+/* character pull quote */
+.pull{margin:14px 0 18px;padding:14px 18px 12px 22px;border-left:6px solid var(--pink);background:linear-gradient(90deg,#ff2a8a22,transparent 80%);transform:rotate(-1deg);position:relative}
+.pull::before{content:'\201C';position:absolute;left:-4px;top:-26px;font:72px/1 'Monoton',cursive;color:var(--cyan);text-shadow:0 0 14px var(--cyan);opacity:.85}
+.pull p{margin:0;font-family:'VT323',monospace;font-size:clamp(26px,3.4vw,38px);line-height:1.05;color:#fff;text-shadow:2px 0 var(--pink),-2px 0 var(--cyan),0 0 18px #ff2a8aaa;letter-spacing:.5px}
+.pull cite{display:block;margin-top:8px;font:normal 11px 'Press Start 2P';color:var(--yel);text-shadow:0 0 8px #ffe14d88}
+.pull cite small{font-size:8px;color:#c9b6ff;opacity:.8}
+@media(max-width:600px){.pull p{font-size:26px}.pull{padding:12px 12px 10px 16px}}
+
+/* +~12% brightness pass: neon text/glow boost */
+.title,.sub,.quote,.pre,.vhs-osd,.menu button,.tag,.dname,h3{filter:brightness(1.12) saturate(1.08)}
+.card{box-shadow:0 0 0 2px var(--cyan),0 0 14px #16f4ff55}
+.helix-page .vignette{opacity:.85}
+/* smaller PLAY / SPIRAL MODE (desktop ~25% smaller; phones equal, 44px tall, narrower) */
+@media (min-width:601px){
+ .spiral-wrap .spiral-btn{padding:9px 18px 9px 12px;gap:10px;border-width:3px}
+ .spiral-wrap .spiral-txt{font-size:clamp(16px,2.2vw,24px)}
+ .spiral-wrap .spiral-btn small{font-size:15px}
+ .spiral-wrap .spiral-ico{width:24px;height:36px}
+ .spiral-wrap .play-btn{padding:9px 14px;font-size:clamp(13px,1.8vw,18px)}
+}
+@media (max-width:600px),(max-height:500px) and (pointer:coarse){
+ .spiral-wrap{gap:5px}
+ .spiral-wrap .play-btn,.spiral-wrap .spiral-btn{width:min(300px,calc(100vw - 32px));height:44px;min-height:44px;max-height:44px}
+ .spiral-wrap .play-btn{font-size:12px}.spiral-wrap .spiral-txt{font-size:14px}
+ body:not(.helix-page){padding-bottom:116px}
+}
+@media (max-height:500px) and (pointer:coarse) and (orientation:landscape){
+ .spiral-wrap{flex-direction:column}
+ .spiral-wrap .play-btn,.spiral-wrap .spiral-btn{width:min(260px,calc(100vw - 32px))}
+}
+.grain{background-size:256px 256px}
+.pull p{font-size:clamp(30px,3.6vw,44px)}
+.pull::before{font:84px/1 'VT323',monospace;top:-30px}
+@media(max-width:600px){.title .sp{width:.25em}.pull p{font-size:28px}}
+.pull::before{display:none}
+/* landscape phones: compact dock, PLAY | SPIRAL side by side at equal size (~56px = 14% of a 390px screen) */
+@media (max-height:500px) and (pointer:coarse) and (orientation:landscape){
+ .spiral-wrap{flex-direction:row!important;justify-content:center;gap:10px;padding:5px 8px calc(5px + env(safe-area-inset-bottom))}
+ .spiral-wrap .play-btn,.spiral-wrap .spiral-btn{width:min(220px,calc(50vw - 24px));order:0}
+ .spiral-wrap .play-btn{order:-1}
+ body:not(.helix-page){padding-bottom:66px}
+}

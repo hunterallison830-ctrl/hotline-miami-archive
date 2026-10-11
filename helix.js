@@ -15,7 +15,8 @@ const smoke = createSmokeBackground(renderer, scene);
 // ---------- background double helix (infinite, scroll-driven, recycled) ----------
 // Each slot k shows global segment g = k + floor(off); its position depends only on g and `off`,
 // so a segment never jumps: when it leaves one end the slot is recycled at the other end, already faded to 0.
-const HX_SEG = 120, HX_DY = 0.24, HX_DA = 0.33, HX_R = 1.7, RUNG_EVERY = 4, RUNG_N = 5;
+const HX_MOB = matchMedia('(max-width:700px)').matches || matchMedia('(pointer:coarse)').matches;
+const HX_SEG = HX_MOB ? 80 : 120, HX_DY = 0.24, HX_DA = 0.33, HX_R = 1.7, RUNG_EVERY = 4, RUNG_N = 5;
 const HX_RUNGS = Math.ceil(HX_SEG / RUNG_EVERY) * RUNG_N, HX_TOTAL = HX_SEG * 2 + HX_RUNGS;
 const cubeGeo = new THREE.BoxGeometry(0.11, 0.11, 0.11);
 const cubeMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
@@ -38,7 +39,7 @@ const dummy = new THREE.Object3D(), col = new THREE.Color(), col2 = new THREE.Co
 let hxOff = 0, hxVel = 0, hxSpin = 0;
 function updateHelixBG(t, dt, cardVel) {
   // velocity: gentle idle drift + scroll velocity, damped so it eases in/out with no jumps
-  const want = 0.9 + THREE.MathUtils.clamp(cardVel, -14, 14) * 1.6;
+  const want = 0.5 + THREE.MathUtils.clamp(cardVel, -14, 14) * 1.6;
   hxVel += (want - hxVel) * (1 - Math.exp(-3 * dt));
   hxOff += hxVel * dt; hxSpin += (0.25 + Math.abs(hxVel) * 0.04) * dt;
   const base = Math.floor(hxOff), fr = hxOff - base, half = HX_SEG / 2;
@@ -53,9 +54,9 @@ function updateHelixBG(t, dt, cardVel) {
       const a = ang + s * Math.PI, x = Math.cos(a) * HX_R, z = Math.sin(a) * HX_R;
       dummy.position.set(x, y, z); dummy.rotation.set(a, g * 0.2, 0); dummy.scale.setScalar(0.8 + 0.4 * pulse); dummy.updateMatrix();
       cubes.setMatrixAt(n, dummy.matrix);
-      col.copy(PINK).lerp(CYAN, s ? 1 - grad : grad).multiplyScalar(f2 * pulse * (0.75 + 0.25 * Math.sign(z + 0.001)));
+      col.copy(PINK).lerp(CYAN, s ? 1 - grad : grad).multiplyScalar(f2 * pulse * (0.75 + 0.25 * Math.sign(z + 0.001)) * (HX_MOB ? 0.8 : 1));
       cubes.setColorAt(n++, col);
-      gPos[gi] = x; gPos[gi + 1] = y; gPos[gi + 2] = z; gCol[gi] = col.r * 0.55; gCol[gi + 1] = col.g * 0.55; gCol[gi + 2] = col.b * 0.55; gi += 3;
+      gPos[gi] = x; gPos[gi + 1] = y; gPos[gi + 2] = z; gCol[gi] = col.r * 0.35; gCol[gi + 1] = col.g * 0.35; gCol[gi + 2] = col.b * 0.35; gi += 3;
     }
     if (((g % RUNG_EVERY) + RUNG_EVERY) % RUNG_EVERY === 0) { // rung between strands
       for (let r = 1; r <= RUNG_N; r++) {
@@ -167,12 +168,12 @@ function updateInfo(i, force) {
 const openActive = () => { const o = deck[Math.round(cur)]; if (o) window.HM.open(o.k, o.i); };
 
 // ---------- layout ----------
-let mobile = false, short = false;
+let mobile = false, short = false, dprDropped = false, slowN = 0, frameN = 0;
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
 const L = { active: V(0, 0, 0), hx: V(0, 0, 0), exit: V(0, 0, 0) };
 function layout() {
   const w = innerWidth, h = innerHeight; mobile = w / h < 0.95 || (w < 700 && h >= 500); short = !mobile && h < 500; // short = phone landscape
-  renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 1.5 : 2)); // re-applied on every resize (DPR changes across monitors)
+  renderer.setPixelRatio(Math.min(devicePixelRatio, (mobile || short) ? (dprDropped ? 1 : 1.25) : 2)); // re-applied on every resize (DPR changes across monitors)
   renderer.setSize(w, h, false); camera.aspect = w / h;
   camera.fov = mobile ? 70 : 62; camera.updateProjectionMatrix();
   const halfW = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)) * 10 * camera.aspect;
@@ -221,6 +222,7 @@ function jumpTo(i) {
   i = clampT(Math.round(i)); lastInput = performance.now(); lastDir = 0;
   if (Math.abs(i - cur) < 3) { jump = null; target = i; return; }   // short hops keep the damped feel
   jump = { from: cur, to: i, t0: performance.now(), dur: JUMP_MS, xfade: Math.abs(i - cur) > FADE_JUMP };
+  if (window.SFX) SFX.play('zap');
   target = i;
 }
 // wheel: mouse notches (|delta|>=50) move exactly 1 card; trackpads accumulate small deltas into whole cards
@@ -291,6 +293,8 @@ function assignPool(base) {
   }
 }
 function frame() {
+  { const idle = !dragging && !jump && Math.abs(target - cur) < 1e-3 && performance.now() - lastInput > 4000 && !window.HM.isOpen?.();
+    if (idle && (frameN++ & 1)) { requestAnimationFrame(frame); return; } }
   const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
   const prev = cur;
   if (jump) {
@@ -326,10 +330,12 @@ function frame() {
   }
   updateInfo(Math.round(cur));
   updateHelixBG(t, dt, jump && jump.xfade ? 0 : vel);
-  fx.update(t, dt, cur, jump && jump.xfade ? 0 : vel);
+  fx.update(t, dt, cur, jump ? 0 : vel);
+  if (window.SFX) SFX.spiral(cur, vel, !!jump);
   // cheaper frames while moving on phones: drop DPR to 1 during drags/flings, restore once settled
   const busy = dragging || Math.abs(target - cur) > 0.05 || !!jump;
-  if (mobile) { const want = busy ? 1 : Math.min(devicePixelRatio, 1.5); if (busy) settleT = t; if (want !== renderer.getPixelRatio() && (busy || t - settleT > 0.3)) renderer.setPixelRatio(want); }
+  // phones: fixed DPR (no per-drag canvas reallocation); one-way drop to 1 only after sustained slow frames
+  slowN = dt > 0.022 ? slowN + 1 : 0; if ((mobile || short) && !dprDropped && slowN > 20 && renderer.getPixelRatio() > 1) { dprDropped = true; renderer.setPixelRatio(1); }
   smoke.update(t);
   renderer.render(scene, camera);
   requestAnimationFrame(frame);

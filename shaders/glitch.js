@@ -20,6 +20,7 @@ uniform sampler2D uTex;
 uniform float uVelocity;
 uniform float uTime;
 uniform float uOpacity;
+uniform float uBlur;
 varying vec2 vUv;
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -41,6 +42,9 @@ void main() {
   float cr = texture2D(uTex, uv + dir * s).r;
   vec4  cg = texture2D(uTex, uv);
   float cb = texture2D(uTex, uv - dir * s).b;
+  if (uBlur > 0.3) { // depth blur: 4-tap box kills far-card shimmer (no mipmaps on pixel art)
+    vec2 o = vec2(0.006, 0.0045) * uBlur;
+    cg = (cg + texture2D(uTex, uv + vec2(o.x, o.y)) + texture2D(uTex, uv - vec2(o.x, o.y)) + texture2D(uTex, uv + vec2(o.x, -o.y)) + texture2D(uTex, uv + vec2(-o.x, o.y))) / 5.0; cr = cg.r; cb = cg.b; }
   vec3 col = vec3(cr, cg.g, cb);
 
   // scanlines + neon tint on fast motion
@@ -60,6 +64,7 @@ export function createGlitchMaterial(texture) {
       uVelocity: { value: 0 },
       uTime: { value: 0 },
       uOpacity: { value: 1 },
+      uBlur: { value: 0 },
     },
     vertexShader: vert,
     fragmentShader: frag,
