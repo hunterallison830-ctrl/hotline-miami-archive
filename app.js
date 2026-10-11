@@ -1,7 +1,7 @@
 const $=s=>document.querySelector(s);let D,tab='characters',game='all',sub='all',q='';
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 // wavy color-cycling title
-const t=$('#title');if(t)t.innerHTML=[...t.textContent].map((c,i)=>c===' '?'<span>&nbsp;</span>':`<span style="animation-delay:${i*-.09}s,${i*-.18}s">${c}</span>`).join('');
+const t=$('#title');if(t)t.innerHTML=[...t.textContent].map((c,i)=>c===' '?'<span class="sp">&nbsp;</span>':`<span style="animation-delay:${i*-.09}s,${i*-.18}s">${c}</span>`).join('');
 let t0=Date.now();setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000);$('#clock')&&($('#clock').textContent=`SP ${Math.floor(s/3600)}:${String(Math.floor(s/60)%60).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`)},1000);
 const slug=x=>x.id||x.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 const SUBS={characters:['all','Playable','Masked Figure','Boss','NPC'],masks:['all','HM1 Jacket','HM2'],weapons:['all','Melee','Firearm','Thrown','Cut/Beta']};

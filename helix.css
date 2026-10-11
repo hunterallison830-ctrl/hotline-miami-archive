@@ -92,3 +92,5 @@ body.fx-shake #gl{animation:fxShake .38s steps(5)}
  .hx-grid{white-space:nowrap;margin-top:4px;padding:0 8px}
  .hx-grid.hx-play{margin-top:4px}
 }
+/* phone landscape: active deck button no longer slides into its neighbour */
+@media (max-height:500px) and (orientation:landscape){ .hx-decks button.on,.hx-decks button:hover{transform:none} }

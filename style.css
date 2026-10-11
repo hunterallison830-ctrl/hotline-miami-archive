@@ -124,3 +124,21 @@ body:has(.modal:not([hidden])) .spiral-wrap{display:none}
  .hero{padding-top:48px;padding-bottom:0}.hero .pre{margin:0}.hero .title{font-size:46px;margin:6px 0}.hero .sub{margin:4px 0}.hero .quote{margin:4px 0;font-size:20px}
  body:not(.helix-page){padding-bottom:96px}
 }
+/* phones (portrait + landscape): PLAY and SPIRAL MODE identical size, stacked PLAY over SPIRAL, both opaque */
+@media (max-width:600px),(max-height:500px) and (pointer:coarse){
+ .spiral-wrap{gap:6px;align-items:center}
+ .spiral-wrap .play-btn,.spiral-wrap .spiral-btn{order:0;box-sizing:border-box;width:min(420px,calc(100vw - 24px));height:46px;min-height:46px;max-height:46px;margin:0;padding:0 12px;align-self:center;justify-content:center;transform:none;flex:0 0 auto;opacity:1}
+ .spiral-wrap .play-btn{order:-1;font-size:14px;background:#ffe14d;border:3px solid #000}
+ .spiral-wrap .spiral-btn{background:#1f0438;border:3px solid var(--pink)}
+ .spiral-wrap .spiral-txt{font-size:16px}
+ body:not(.helix-page){padding-bottom:124px}
+}
+@media (max-height:500px) and (pointer:coarse) and (orientation:landscape){
+ .spiral-wrap{gap:4px}
+ .spiral-wrap .play-btn,.spiral-wrap .spiral-btn{height:44px;min-height:44px;max-height:44px;width:min(380px,calc(100vw - 24px))}
+ body:not(.helix-page){padding-bottom:110px}
+ .hero .title{font-size:40px;line-height:1.05;letter-spacing:1px}
+}
+.title span{white-space:pre}
+@media (max-height:500px) and (pointer:coarse) and (orientation:landscape){ .hero .title{font-size:36px;margin:8px 0 12px;transform:rotate(-3deg)} }
+.title .sp{width:.9em}

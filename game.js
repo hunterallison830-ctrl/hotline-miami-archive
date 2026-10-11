@@ -58,8 +58,9 @@ const WAVES = 5, BOSS_WAVE = 6;
 let waveBest = +localStorage.getItem('hm_nightcall_wave_best') || 0, waveBestGrade = localStorage.getItem('hm_nightcall_wave_grade') || '';
 const SPAWNS = []; // doors + corridor ends
 const WAVE_DBG_TEST = !!QS.get('wave');
-for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (MAP[y][x] === 'D') SPAWNS.push(T(x, y));
-SPAWNS.push(T(1, 15.5), T(38, 15.5), T(1, 2), T(38, 2), T(1, 12), T(38, 12)); // test-only: start with a full meter
+{ const seen = new Set(), add = (x, y) => { const k = x + ',' + y; if (seen.has(k) || MAP[y]?.[x] !== '.') return; for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) if (MAP[y + dy]?.[x + dx] !== '.') return; seen.add(k); SPAWNS.push(T(x, y)); };
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) if (MAP[y][x] === 'D') for (const [dx, dy] of [[2, 0], [-2, 0], [0, 2], [0, -2], [3, 0], [-3, 0], [0, 3], [0, -3]]) add(x + dx, y + dy);
+  add(2, 15); add(37, 15); add(2, 16); add(37, 16); } // test-only: start with a full meter
 const PW_DUR = 15, PW_PER_COMBO = 1 / 15; // 1+2+3+4+5 = 15 combo-steps fills it
 const reach = () => (S.p.wpn ? 44 : 33) * (S.pwOn > 0 ? 1.3 : 1);   // ~+10% base melee reach, +30% powered
 const pspeed = () => (S.mask.id === 'rasmus' ? 215 : 172) * (S.pwOn > 0 ? 1.25 : 1);
@@ -79,7 +80,35 @@ function newRun() {
   mode = 'play'; setModeClass(); rArm = -1e9;
   if (gameMode === 'waves') { const w0 = dbgWave || 1; dbgWave = 0; S.dbg = WAVE_DBG_TEST; startWave(w0); }
 }
-function mkEnemy(pos, w, path, o = {}) { return { x: pos.x, y: pos.y, a: Math.random() * 6.28, w, path: path || [pos], pi: 0, st: 'patrol', stun: 0, seen: 0, cd: 0, last: null, r: 10, dead: false, swing: 0, spd: 1, react: 0.45, smart: 0, nav: null, navT: 0, ...o }; }
+function mkEnemy(pos, w, path, o = {}) { return { x: pos.x, y: pos.y, a: Math.random() * 6.28, w, path: path || [pos], pi: 0, st: 'patrol', stun: 0, seen: 0, cd: 0, last: null, r: 10, dead: false, swing: 0, vx: 0, vy: 0, stall: 0, inT: 0, spd: 1, react: 0.45, smart: 0, nav: null, navT: 0, ...o }; }
+function fits(x, y, r) { r -= 1; return !(solidAt(x - r, y - r) || solidAt(x + r, y - r) || solidAt(x - r, y + r) || solidAt(x + r, y + r)); }
+function validSpot(at, r = 10) { for (let k = 0; k < 12; k++) { const x = at.x + (k ? (Math.random() - .5) * 16 : 0), y = at.y + (k ? (Math.random() - .5) * 16 : 0); if (fits(x, y, r)) return { x, y }; } return { x: at.x, y: at.y }; }
+// shared flow field (BFS distance from the player's tile), rebuilt every 0.3s; enemies step down the gradient
+const FF = new Int16Array(MW * MH); let ffT = 0, ffTile = -1;
+function buildFlow(px, py) { FF.fill(-1); const sx = Math.floor(px / TS), sy = Math.floor(py / TS); if (wall(sx, sy)) return; const q = [sy * MW + sx]; FF[q[0]] = 0;
+  for (let h = 0; h < q.length; h++) { const c = q[h], cx = c % MW, cy = (c / MW) | 0; for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = cx + dx, ny = cy + dy; if (wall(nx, ny)) continue; const n = ny * MW + nx; if (FF[n] !== -1) continue; FF[n] = FF[c] + 1; q.push(n); } } }
+function flowTarget(e) { // look ahead along the field and string-pull to the farthest tile still in clear sight
+  let cx = Math.floor(e.x / TS), cy = Math.floor(e.y / TS); if (FF[cy * MW + cx] < 0) return null; let best = null;
+  for (let step = 0; step < 4; step++) { let nb = null, nd = FF[cy * MW + cx];
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) { const nx = cx + dx, ny = cy + dy; if (wall(nx, ny) || (dx && dy && (wall(cx + dx, cy) || wall(cx, cy + dy)))) continue; const d = FF[ny * MW + nx]; if (d >= 0 && d < nd) { nd = d; nb = [nx, ny]; } }
+    if (!nb) break; cx = nb[0]; cy = nb[1]; const c = T(cx, cy); if (step === 0 || clearPath(e, c, e.r)) best = c; else break; }
+  return best; }
+function clearPath(a, b, r) { const d = dist(a, b), n = Math.ceil(d / 6); for (let i = 1; i <= n; i++) { const t = i / n; if (!fits(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, r + 1)) return false; } return true; }
+// steering: smoothed velocity + separation + wall sliding (moveC is per-axis) + damped heading
+function steer(e, tgt, sp, face, dt) {
+  let dx = 0, dy = 0;
+  if (tgt) { const d = dist(e, tgt); if (d > 2) { const k = Math.min(1, d / 18); dx = (tgt.x - e.x) / d * sp * k; dy = (tgt.y - e.y) / d * sp * k; } }
+  for (const o of S.en) { if (o === e || o.dead || o.inT > 0) continue; const ox = e.x - o.x, oy = e.y - o.y, d = Math.hypot(ox, oy); if (d < 24 && d > 0.01) { const f = (24 - d) / 24 * 140; dx += ox / d * f; dy += oy / d * f; } }
+  const l = Math.hypot(dx, dy), cap = sp * 1.1; if (l > cap) { dx *= cap / l; dy *= cap / l; }
+  const k = 1 - Math.exp(-10 * dt); e.vx += (dx - e.vx) * k; e.vy += (dy - e.vy) * k;
+  const ox = e.x, oy = e.y; moveC(e, e.vx * dt, e.vy * dt);
+  // wall slide: if an axis was blocked, kill that velocity component so we don't keep pushing into it
+  if (Math.abs(e.x - ox) < Math.abs(e.vx * dt) * 0.5) e.vx *= 0.2; if (Math.abs(e.y - oy) < Math.abs(e.vy * dt) * 0.5) e.vy *= 0.2;
+  // stall detector -> force a fresh route
+  e.stall = Math.hypot(e.x - ox, e.y - oy) < sp * dt * 0.15 && tgt ? (e.stall || 0) + dt : 0; if (e.stall > 0.6) { e.nav = null; e.navT = 0; e.stall = 0; if (!fits(e.x, e.y, e.r)) Object.assign(e, validSpot(SPAWNS[0])); }
+  const want = face != null ? face : Math.hypot(e.vx, e.vy) > 12 ? Math.atan2(e.vy, e.vx) : e.a;
+  e.a += angDiff(want, e.a) * (1 - Math.exp(-(face != null ? 16 : 9) * dt));
+}
 function farSpawns(minD) { const p = S.p; const c = SPAWNS.filter(q => Math.hypot(q.x - p.x, q.y - p.y) > minD); return c.length ? c : SPAWNS; }
 function startWave(n) {
   S.wave = n; S.waveT = 0; S.wkills = 0;
@@ -87,9 +116,9 @@ function startWave(n) {
   const count = 4 + n * 2, guns = 0.15 + n * 0.1, spd = 1 + n * 0.08, react = Math.max(0.2, 0.5 - n * 0.06), smart = Math.min(0.9, 0.1 + n * 0.18);
   const sp = farSpawns(260);
   for (let i = 0; i < count; i++) {
-    const at = sp[i % sp.length], jitter = { x: at.x + (Math.random() - .5) * 20, y: at.y + (Math.random() - .5) * 20 };
+    const at = sp[i % sp.length], pos = validSpot(at);
     const tgt = FLOOR[(Math.random() * FLOOR.length) | 0];
-    const e = mkEnemy(jitter, Math.random() < guns ? 'gun' : 'bat', [jitter, T(tgt[0], tgt[1])], { spd, react, smart });
+    const e = mkEnemy(pos, Math.random() < guns ? 'gun' : 'bat', [pos, T(tgt[0], tgt[1])], { spd, react, smart, inT: 0.35 * Math.floor(i / sp.length) + Math.random() * 0.2 });
     if (Math.random() < smart) { e.st = 'chase'; e.last = { x: S.p.x, y: S.p.y }; }
     S.en.push(e);
   }
@@ -176,7 +205,7 @@ const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const angDiff = (a, b) => Math.atan2(Math.sin(a - b), Math.cos(a - b));
 function los(a, b) { const d = dist(a, b), n = Math.ceil(d / 8); for (let i = 1; i < n; i++) { const t = i / n; if (solidAt(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t)) return false; } return true; }
 function moveC(o, dx, dy) {
-  const r = o.r - 1;
+  const r = (o.cr || o.r) - 1;
   const hit = (x, y) => solidAt(x - r, y - r) || solidAt(x + r, y - r) || solidAt(x - r, y + r) || solidAt(x + r, y + r);
   if (!hit(o.x + dx, o.y)) o.x += dx; if (!hit(o.x, o.y + dy)) o.y += dy;
 }
@@ -184,7 +213,7 @@ function auraP(p, sp) { const a = Math.random() * 6.283, r = 10 + Math.random() 
 function pop(x, y, txt, col, big) { S.pops.push({ x, y, txt, col, t: 0, big }); }
 function splat(x, y, a) { for (let i = 0; i < 14; i++) { const s = 2 + Math.random() * 5, d = Math.random() * 26; S.decals.push({ x: x + Math.cos(a + (Math.random() - .5)) * d, y: y + Math.sin(a + (Math.random() - .5)) * d, s }); } for (let i = 0; i < 10; i++) S.parts.push({ x, y, vx: Math.cos(a + (Math.random() - .5) * 1.5) * (80 + Math.random() * 160), vy: Math.sin(a + (Math.random() - .5) * 1.5) * (80 + Math.random() * 160), t: 0 }); }
 function killEnemy(e, a, how) {
-  if (e.dead) return; e.dead = true; e.a = a; S.kills++;
+  if (e.dead) return; e.dead = true; e.a = a; S.kills++; S.lastKillT = S.t;
   if (e.w) S.items.push({ x: e.x, y: e.y, type: e.w, ammo: e.w === 'gun' ? 8 : 0, vx: 0, vy: 0, fly: 0, spin: Math.random() * 6 });
   e.w = null; splat(e.x, e.y, a); S.shake = Math.min(14, S.shake + 7);
   S.combo = S.t - S.comboT < 2.6 ? S.combo + 1 : 1; S.comboT = S.t; S.maxCombo = Math.max(S.maxCombo, S.combo);
@@ -198,7 +227,7 @@ function killEnemy(e, a, how) {
 // ---------- boss: THE ENFORCER (original chainsaw brute) ----------
 function spawnBoss() {
   const at = farSpawns(300)[0];
-  S.boss = { x: at.x, y: at.y, a: 0, r: 22, hp: 30, max: 30, phase: 1, st: 'walk', t: 1.2, hitT: 0, stun: 0, ang: 0, cool: 0, swing: 0, dead: false, deadT: 0, next: 0 };
+  S.boss = { x: at.x, y: at.y, a: 0, r: 22, cr: 13, hp: 30, max: 30, phase: 1, st: 'walk', t: 1.2, hitT: 0, stun: 0, ang: 0, cool: 0, swing: 0, dead: false, deadT: 0, next: 0 };
 }
 function bossHit(dmg, a, how) {
   const b = S.boss; if (!b || b.dead || b.hitT > 0) return false;
@@ -265,7 +294,7 @@ function attack() {
   if (S.boss && !S.boss.dead) { const b = S.boss, d = dist(b, p), a = Math.atan2(b.y - p.y, b.x - p.x);
     if (d < reach() + b.r - 8 && (Math.abs(angDiff(a, p.a)) < 1.2 || d < b.r + 12)) bossHit((p.wpn === 'bat' || S.mask.id === 'tony' ? 2 : 1) * (S.pwOn > 0 ? 2 : 1), a, 'melee'); }
   for (const e of S.en) {
-    if (e.dead) continue; const d = dist(e, p); if (d > reach()) continue;
+    if (e.dead || e.inT > 0) continue; const d = dist(e, p); if (d > reach()) continue;
     if (Math.abs(angDiff(Math.atan2(e.y - p.y, e.x - p.x), p.a)) > 1.1 && d > 16) continue;
     const a = Math.atan2(e.y - p.y, e.x - p.x);
     if (e.stun > 0) killEnemy(e, a, 'exec');
@@ -299,26 +328,40 @@ function update(dt) {
   }
   p.cd -= dt; p.swing -= dt;
   // enemies
+  ffT -= dt; const pt = Math.floor(p.y / TS) * MW + Math.floor(p.x / TS); if (ffT <= 0 || pt !== ffTile) { if (ffT <= 0 || pt !== ffTile) buildFlow(p.x, p.y); ffT = 0.3; ffTile = pt; }
   for (const e of S.en) {
     if (e.dead) continue;
+    if (e.inT > 0) { e.inT -= dt; continue; }
     if (e.stun > 0) { e.stun -= dt; continue; }
     e.cd -= dt; e.swing -= dt;
     const toP = Math.atan2(p.y - e.y, p.x - e.x), dP = dist(e, p);
     const sees = !p.dead && dP < 360 && (Math.abs(angDiff(toP, e.a)) < 1.25 || dP < 70 || e.st === 'chase') && los(e, p);
     if (sees) { if (e.st !== 'chase') { e.st = 'chase'; e.seen = 0; pop(e.x, e.y - 22, '!', PAL.pink); } e.seen += dt; e.last = { x: p.x, y: p.y }; }
     else if (e.smart && !p.dead && Math.random() < e.smart * dt * 0.5) { e.st = 'chase'; e.last = { x: p.x, y: p.y }; } // hunters 'hear' you
-    let tgt = null, sp = 62 * e.spd;
+    let tgt = null, sp = 62 * e.spd, face = null;
     if (e.st === 'chase') {
       sp = 132 * e.spd; tgt = e.last;
-      if (!sees && tgt && e.smart) { e.navT -= dt; if (e.navT <= 0 || !e.nav) { e.nav = navNext(e, tgt); e.navT = 0.35; } tgt = e.nav; }
       if (sees) {
-        e.a = toP;
-        if (e.w === 'gun') { if (dP < 330 && e.seen > e.react && e.cd <= 0) { e.cd = 0.75; const sa = toP + (Math.random() - .5) * 0.12; S.bullets.push({ x: e.x + Math.cos(sa) * 14, y: e.y + Math.sin(sa) * 14, vx: Math.cos(sa) * 650, vy: Math.sin(sa) * 650, from: 'e' }); } if (dP < 140) tgt = null; }
+        face = toP;
+        if (e.w === 'gun') { if (dP < 330 && e.seen > e.react && e.cd <= 0 && Math.abs(angDiff(toP, e.a)) < 0.35) { e.cd = 0.75; const sa = e.a + (Math.random() - .5) * 0.12; S.bullets.push({ x: e.x + Math.cos(sa) * 14, y: e.y + Math.sin(sa) * 14, vx: Math.cos(sa) * 650, vy: Math.sin(sa) * 650, from: 'e' }); } if (dP < 140) tgt = null; }
         else if (dP < 24 && e.cd <= 0) { e.cd = 0.5; e.swing = 0.16; if (e.seen > 0.25) killPlayer(toP); }
-      } else if (!e.last || dist(e, e.last) < 10) { e.st = 'patrol'; e.last = null; }
-    } else { tgt = e.path[e.pi]; if (dist(e, tgt) < 6) e.pi = (e.pi + 1) % e.path.length; if (e.smart && !los(e, tgt)) { e.navT -= dt; if (e.navT <= 0 || !e.nav) { e.nav = navNext(e, tgt); e.navT = 0.35; } tgt = e.nav; } }
-    if (tgt) { const a = Math.atan2(tgt.y - e.y, tgt.x - e.x); if (e.st !== 'chase' || !sees) e.a = a; const ox = e.x, oy = e.y; moveC(e, Math.cos(a) * sp * dt, Math.sin(a) * sp * dt);
-      if (Math.hypot(e.x - ox, e.y - oy) < sp * dt * 0.3) { moveC(e, Math.cos(a + 1.2) * sp * dt, Math.sin(a + 1.2) * sp * dt); } }
+        if (tgt && !clearPath(e, tgt, e.r)) tgt = flowTarget(e) || tgt;   // visible but a corner is in the way
+      } else if (e.smart || (e.last && !clearPath(e, e.last, e.r))) { tgt = flowTarget(e) || e.last; if (!e.smart && e.last && dist(e, e.last) < 14) { e.st = 'patrol'; e.last = null; } }
+      else if (!e.last || dist(e, e.last) < 14) { e.st = 'patrol'; e.last = null; }
+    } else { tgt = e.path[e.pi]; if (dist(e, tgt) < 8) e.pi = (e.pi + 1) % e.path.length;
+      if (!clearPath(e, tgt, e.r)) { e.navT -= dt; if (e.navT <= 0 || !e.nav || dist(e, e.nav) < 8) { e.nav = navNext(e, tgt); e.navT = 0.3; } tgt = e.nav; } }
+    steer(e, tgt, sp, face, dt);
+  }
+  // wave failsafes: countdown always starts once everything is dead; enemies with no route (walled in / out of map) get re-spawned at a door
+  if (S.gm === 'waves' && !p.dead) {
+    const alive = S.en.filter(e => !e.dead);
+    if (S.wave < BOSS_WAVE && S.waveT <= 0 && S.wave > 0 && !alive.length) { S.waveT = 10; pop(p.x, p.y - 40, 'WAVE ' + S.wave + ' CLEAR', PAL.cyan, true); }
+    S.lastKillT = S.lastKillT || S.t;
+    for (const e of alive) { if (e.inT > 0) continue; const ti = Math.floor(e.y / TS) * MW + Math.floor(e.x / TS);
+      const lost = !fits(e.x, e.y, e.r) || e.x < 0 || e.y < 0 || e.x > MW * TS || e.y > MH * TS || FF[ti] < 0;
+      if (lost || (S.t - S.lastKillT > 25 && alive.length <= 3 && !los(e, p))) { const at = validSpot(farSpawns(160)[(Math.random() * SPAWNS.length) % farSpawns(160).length | 0]); e.x = at.x; e.y = at.y; e.vx = e.vy = 0; e.st = 'chase'; e.last = { x: p.x, y: p.y }; e.smart = Math.max(e.smart, 1); }
+    }
+    if (S.t - S.lastKillT > 25) S.lastKillT = S.t - 10;
   }
   if (S.gm === 'waves') { updateBoss(dt); if (S.waveT > 0 && !p.dead) { const before = Math.ceil(S.waveT); S.waveT -= dt; if (Math.ceil(S.waveT) !== before && S.waveT > 0) S.tick = 1; if (S.waveT <= 0) { S.waveT = 0; startWave(S.wave + 1); } } if (S.tick > 0) S.tick -= dt * 3; }
   S.pwPop = Math.max(0, (S.pwPop || 0) - dt * 3);
@@ -328,7 +371,7 @@ function update(dt) {
       b.x += b.vx * dt / n; b.y += b.vy * dt / n;
       if (solidAt(b.x, b.y)) { b.gone = true; for (let k = 0; k < 4; k++) S.parts.push({ x: b.x, y: b.y, vx: (Math.random() - .5) * 200, vy: (Math.random() - .5) * 200, t: 0, spark: 1 }); break; }
       if (b.from === 'p' && S.boss && !S.boss.dead && dist(S.boss, b) < S.boss.r) { bossHit(1, Math.atan2(b.vy, b.vx), 'gun'); b.gone = true; break; }
-      if (b.from === 'p') { for (const e of S.en) if (!e.dead && dist(e, b) < 12) { killEnemy(e, Math.atan2(b.vy, b.vx), 'gun'); b.gone = true; break; } }
+      if (b.from === 'p') { for (const e of S.en) if (!e.dead && !(e.inT > 0) && dist(e, b) < 12) { killEnemy(e, Math.atan2(b.vy, b.vx), 'gun'); b.gone = true; break; } }
       else if (!p.dead && dist(p, b) < 10) { killPlayer(Math.atan2(b.vy, b.vx)); b.gone = true; }
     }
   }
@@ -537,7 +580,7 @@ function render() {
     if (it.fly <= 0) { g.strokeStyle = PAL.yel; g.globalAlpha = 0.4 + 0.3 * Math.sin(t * 6); g.strokeRect(-15, -15, 30, 30); } g.restore(); }
   for (const e of S.en) if (e.dead) drawGuy(e, '#e8e8e8', '#e0b48a', true);
   if (S.p.dead) drawGuy(S.p, '#2a6cff', '#e0b48a', true);
-  for (const e of S.en) if (!e.dead) { drawGuy(e, e.stun > 0 ? '#9a9a9a' : '#f2f2f2', '#e0b48a', false, null, e.w, e.swing); if (e.stun > 0) txt('Z', e.x + 10, e.y - 16, 8, PAL.cyan); }
+  for (const e of S.en) if (!e.dead && !(e.inT > 0)) { drawGuy(e, e.stun > 0 ? '#9a9a9a' : '#f2f2f2', '#e0b48a', false, null, e.w, e.swing); if (e.stun > 0) txt('Z', e.x + 10, e.y - 16, 8, PAL.cyan); }
   if (S.boss) drawBoss(S.boss, t);
   for (const q of S.smears) { g.save(); g.translate(q.x, q.y); g.scale(q.sx, 1); drawEmblem(0, 0, 30, 0.3 * (1 - q.t / 1.6) * Math.max(S.embA, 0.3), q.rot); g.restore(); }
   if (!S.p.dead && S.embA > 0.01) drawEmblem(S.p.x, S.p.y, 34 * (1 + 0.05 * Math.sin(S.t * 5)), S.embA * (S.pwOn > 0 ? pwFade() * 0.35 + 0.6 : 0.95), 0);
