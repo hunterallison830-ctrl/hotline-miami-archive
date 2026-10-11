@@ -1,16 +1,24 @@
 // Archive sound effects: all synthesised with WebAudio (no audio files). The AudioContext is only created on the first user gesture.
 (() => {
-  const KEY = 'hm_sfx';
-  let ac = null, out = null, nb = null, on = localStorage.getItem(KEY) !== '0';
+  const KEY = 'hm_sfx2', MKEY = 'hm_music2'; // v2 keys: old saved 'off' values are dropped so everyone starts with SFX ON once
+  try { localStorage.removeItem('hm_sfx'); } catch (e) {}
+  let ac = null, out = null, nb = null, on = localStorage.getItem(KEY) !== '0', mus = localStorage.getItem(MKEY) === '1', mTimer = null, mN = 0;
   const last = {};
   const gap = (k, ms) => { const n = performance.now(); if (n - (last[k] || 0) < ms) return false; last[k] = n; return true; };
   function unlock() {
     if (!ac) { const C = window.AudioContext || window.webkitAudioContext; if (!C) return; ac = new C(); out = ac.createGain(); out.gain.value = 0.55; const comp = ac.createDynamicsCompressor(); out.connect(comp).connect(ac.destination);
       nb = ac.createBuffer(1, ac.sampleRate, ac.sampleRate); const d = nb.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
     if (ac.state === 'suspended') ac.resume();
+    if (mus && !mTimer) startMusic();
   }
-  for (const ev of ['pointerdown', 'keydown', 'touchend']) addEventListener(ev, unlock, { capture: true, passive: true });
+  document.addEventListener('visibilitychange', () => { if (!ac) return; if (document.hidden) ac.suspend(); else ac.resume(); });
+  for (const ev of ['pointerdown', 'keydown', 'touchstart', 'touchend', 'click']) addEventListener(ev, unlock, { capture: true, passive: true });
   const ready = () => on && ac && ac.state === 'running';
+  // optional ambient synth loop (archive music; generated, no files). Off by default on the archive.
+  const NOTES = [57, 60, 64, 67, 69, 67, 64, 60, 53, 57, 60, 64, 55, 59, 62, 67];
+  function startMusic() { if (!ac || mTimer) return; mTimer = setInterval(() => { if (!ac || ac.state !== 'running' || document.hidden) return; const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain(), f = ac.createBiquadFilter(); o.type = 'sawtooth'; o.frequency.value = 440 * 2 ** ((NOTES[mN % 16] - 69) / 12); f.type = 'lowpass'; f.frequency.value = 900 + 600 * Math.sin(mN / 8);
+    g.gain.setValueAtTime(0.06, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.22); o.connect(f).connect(g).connect(ac.destination); o.start(t); o.stop(t + 0.25); mN++; }, 180); }
+  function stopMusic() { clearInterval(mTimer); mTimer = null; }
   function tone(type, f0, f1, dur, vol, dl = 0, dest) {
     const t = ac.currentTime + dl, o = ac.createOscillator(), g = ac.createGain(); o.type = type;
     o.frequency.setValueAtTime(f0, t); if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
@@ -24,6 +32,10 @@
     s.connect(f).connect(g).connect(out); s.start(t, Math.random()); s.stop(t + dur + 0.02);
   }
   const S = {
+    ring() { for (let k = 0; k < 2; k++) for (let i = 0; i < 10; i++) { tone('square', 1320, 1320, 0.035, 0.05, k * 0.55 + i * 0.045); tone('square', 990, 990, 0.035, 0.04, k * 0.55 + i * 0.045 + 0.022); } },
+    pickup() { tone('square', 300, 300, 0.05, 0.08); noise(0.08, 0.12, 'bandpass', 2000, 900, 2); tone('sine', 440, 440, 0.25, 0.04, 0.1); },
+    hang() { noise(0.06, 0.2, 'lowpass', 900, 300); tone('square', 480, 480, 0.25, 0.04, 0.12); tone('square', 620, 620, 0.25, 0.03, 0.12); },
+    type() { if (gap('type', 45)) noise(0.02, 0.05, 'highpass', 3500, 3500); },
     hover: () => gap('hover', 60) && tone('square', 1900, 1500, 0.035, 0.035),
     tap: () => gap('tap', 50) && (tone('square', 880, 520, 0.07, 0.07), noise(0.03, 0.08, 'highpass', 3000, 3000)),
     open: () => { // tape whir + VHS clunk
@@ -58,22 +70,33 @@
       if (sp > 3.5 && !jumping) S.whoosh(sp, Math.sign(vel));
       if (sp > 1.2) settled = false; else if (!settled && sp < 0.08) { settled = true; S.snap(); }
       prevSp = sp; },
-    setOn(v, quiet) { on = v; localStorage.setItem(KEY, v ? '1' : '0'); document.querySelectorAll('.sfx-toggle').forEach(b => { b.textContent = 'SFX: ' + (v ? 'ON' : 'OFF'); b.setAttribute('aria-pressed', String(v)); }); if (v && !quiet) { unlock(); setTimeout(() => S.tab(), 30); } },
-    state: () => ({ ctx: ac ? ac.state : 'none', on }),
+    setOn(v, quiet) { on = v; localStorage.setItem(KEY, v ? '1' : '0'); paint(); if (v && !quiet) { unlock(); setTimeout(() => S.tab(), 30); } },
+    get music() { return mus; },
+    setMusic(v) { mus = v; localStorage.setItem(MKEY, v ? '1' : '0'); paint(); if (v) { unlock(); startMusic(); } else stopMusic(); },
+    state: () => ({ ctx: ac ? ac.state : 'none', on, music: mus }),
   };
-  // toggle next to MUSIC (grid) or in the spiral menu
+  const wavy = t => [...t].map((c, i) => `<span style="animation-delay:${i * -0.11}s">${c === ' ' ? '&nbsp;' : c}</span>`).join('');
+  function paint() { const b = document.getElementById('audCtl'); if (!b) return; b.classList.toggle('off', !on); b.querySelector('.aud-main').setAttribute('aria-pressed', String(on)); b.querySelector('.aud-l').innerHTML = wavy('SFX ' + (on ? 'ON' : 'OFF'));
+    const m = b.querySelector('.aud-mus'); m.textContent = 'MUSIC: ' + (mus ? 'ON' : 'OFF'); m.setAttribute('aria-pressed', String(mus)); }
+  // ONE audio control per page: VHS cassette button (SFX on/off) + a small popover with MUSIC
   function mount() {
-    const mk = cls => { const b = document.createElement('button'); b.type = 'button'; b.className = 'sfx-toggle ' + cls; b.id = 'sfxToggle'; b.onclick = e => { e.stopPropagation(); SFX.setOn(!on); }; return b; };
-    const mus = document.getElementById('music');
-    if (mus) mus.after(mk(''));
-    else { const pl = document.querySelector('.hx-play'); if (pl) pl.after(mk('hx-grid')); }
-    SFX.setOn(on, true);
+    document.querySelectorAll('.sfx-toggle,#music').forEach(x => x.remove());
+    const w = document.createElement('div'); w.className = 'aud-wrap'; w.id = 'audCtl';
+    w.innerHTML = `<button class="aud aud-main" type="button" aria-label="Sound effects on/off">${window.AUD_ICON}<span class="aud-l"></span></button><button class="aud-more" type="button" aria-label="More audio options" aria-expanded="false">▴</button><div class="aud-pop" hidden><button class="aud-mus" type="button"></button><small>all audio is synthesised live</small></div>`;
+    document.body.appendChild(w);
+    const pop = w.querySelector('.aud-pop'), more = w.querySelector('.aud-more');
+    w.querySelector('.aud-main').onclick = e => { e.stopPropagation(); SFX.setOn(!on); };
+    more.onclick = e => { e.stopPropagation(); pop.hidden = !pop.hidden; more.setAttribute('aria-expanded', String(!pop.hidden)); };
+    w.querySelector('.aud-mus').onclick = e => { e.stopPropagation(); SFX.setMusic(!mus); };
+    addEventListener('click', e => { if (!w.contains(e.target)) { pop.hidden = true; more.setAttribute('aria-expanded', 'false'); } });
+    const dock = document.querySelector('.spiral-wrap'); const fit = () => { const fixed = dock && getComputedStyle(dock).position === 'fixed'; document.documentElement.style.setProperty('--dockH', fixed ? dock.offsetHeight + 'px' : '0px'); }; fit(); addEventListener('resize', fit);
+    paint();
   }
   document.readyState === 'loading' ? addEventListener('DOMContentLoaded', mount) : mount();
   // delegated archive hooks
   addEventListener('mouseover', e => { const c = e.target.closest && e.target.closest('.card'); if (c && !(e.relatedTarget && c.contains(e.relatedTarget))) SFX.play('hover'); });
   addEventListener('click', e => { const t = e.target.closest ? e.target : null; if (!t) return;
-    if (t.closest('.sfx-toggle')) return;
+    if (t.closest('.aud-wrap,.ph-wrap,.ph-call')) return;
     if (t.closest('[data-tab],[data-deck]')) SFX.play('tab');
     else if (t.closest('#gamef button,#subf button')) SFX.play('filter');
     else if (t.closest('.card,.spiral-btn,.play-btn,.hx-grid,.hx-open,#gl,.mask')) SFX.play('tap'); }, true);

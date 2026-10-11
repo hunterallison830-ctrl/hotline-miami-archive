@@ -1,0 +1,37 @@
+/* PHONE: small corner phone + answering-machine overlay */
+.ph-wrap{position:fixed;right:calc(10px + env(safe-area-inset-right));bottom:calc(var(--dockH,0px) + 10px + env(safe-area-inset-bottom));z-index:60}
+.ph-btn{width:46px;height:46px;padding:5px;border:2px solid #16f4ff;background:#0d0218e6;cursor:pointer;box-shadow:0 0 10px #16f4ff66;display:grid;place-items:center;position:relative;touch-action:manipulation;opacity:.8}
+.ph-btn:hover,.ph-btn:focus-visible{opacity:1}
+.ph-btn svg{width:30px;height:30px}
+.ph-dot{position:absolute;top:-4px;right:-4px;width:10px;height:10px;border-radius:50%;background:#ff2a8a;box-shadow:0 0 8px #ff2a8a;display:none}
+.ph-wrap.missed .ph-dot,.ph-wrap.ring .ph-dot{display:block}
+.ph-wrap.ring .ph-btn{opacity:1;animation:phBuzz .09s linear infinite,phGlow .5s ease-in-out infinite alternate}
+@keyframes phBuzz{0%{transform:translate(0,0) rotate(0)}25%{transform:translate(-2px,1px) rotate(-8deg)}50%{transform:translate(2px,-1px) rotate(7deg)}75%{transform:translate(-1px,-1px) rotate(-5deg)}}
+@keyframes phGlow{to{box-shadow:0 0 22px #ff2a8a,0 0 40px #16f4ff88;border-color:#ff2a8a}}
+.ph-call{position:fixed;inset:0;z-index:90;display:grid;place-items:center;background:radial-gradient(#2a064699,#05010bf0);padding:16px}
+.ph-call[hidden]{display:none}
+.ph-box{width:min(560px,100%);background:#0d0218;border:3px solid #ff2a8a;box-shadow:0 0 30px #ff2a8a88,inset 0 0 30px #16f4ff22;padding:14px 16px;position:relative;transform:rotate(-1deg);animation:phIn .25s ease-out}
+.ph-box::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,#0004 0 1px,transparent 1px 3px)}
+@keyframes phIn{from{transform:rotate(-1deg) scale(.85);opacity:0}}
+.ph-top{display:flex;justify-content:space-between;font:10px 'Press Start 2P',monospace;color:#16f4ff;margin-bottom:10px}
+.ph-rec{color:#ff2a8a;animation:phBlink 1s steps(2) infinite}@keyframes phBlink{50%{opacity:.2}}
+.ph-who{display:flex;gap:12px;align-items:center}
+.ph-img{width:72px;height:72px;object-fit:cover;image-rendering:pixelated;border:2px solid #16f4ff;background:#000;flex:none}
+.ph-from{font:9px 'Press Start 2P',monospace;color:#bbb}
+.ph-name{font:clamp(13px,3.4vw,18px) 'Press Start 2P',monospace;color:#ffe14d;text-shadow:2px 2px 0 #ff2a8a;margin:5px 0}
+.ph-tag{font:15px 'VT323',monospace;color:#16f4ff}
+.ph-txt{font:clamp(24px,5.4vw,32px)/1.12 'VT323',monospace;color:#fff;text-shadow:2px 0 #ff2a8a,-2px 0 #16f4ff;min-height:3.5em;margin:12px 0 4px}
+.ph-txt.typing::after{content:"█";color:#ff2a8a;animation:phBlink .6s steps(2) infinite}
+.ph-src{font:13px 'VT323',monospace;color:#9a8aa8;font-style:italic;margin-bottom:10px}
+.ph-act{display:flex;gap:10px;flex-wrap:wrap}
+.ph-act button{flex:1;min-height:46px;font:10px 'Press Start 2P',monospace;cursor:pointer;border:3px solid;background:#1a0330;touch-action:manipulation}
+.ph-hang{color:#ff2a8a;border-color:#ff2a8a}.ph-next{color:#ffe14d;border-color:#ffe14d}
+.ph-act button:hover,.ph-act button:focus-visible{background:#2a0646;box-shadow:0 0 12px currentColor}
+body.ph-open{overflow:hidden}
+@media (prefers-reduced-motion:reduce){.ph-wrap.ring .ph-btn{animation:phGlow .5s infinite alternate}.ph-box{animation:none}}
+/* spiral on phones: bottom is busy (decks, OPEN FILE), so the audio + phone controls sit top-left under the OSD */
+@media (max-width:700px){
+ .helix-page .aud-wrap{bottom:auto;top:calc(40px + env(safe-area-inset-top))}
+ .helix-page .ph-wrap{right:auto;bottom:auto;left:calc(10px + env(safe-area-inset-left));top:calc(92px + env(safe-area-inset-top))}
+ .helix-page .aud-pop{bottom:auto;top:calc(100% + 6px)}
+}

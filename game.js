@@ -66,7 +66,7 @@ const PW_DUR = 15, PW_PER_COMBO = 1 / 15; // 1+2+3+4+5 = 15 combo-steps fills it
 const _g = {}; const gapOK = (k, ms) => { const n = performance.now(); if (n - (_g[k] || 0) < ms) return false; _g[k] = n; return true; };
 const au = (n, ...a) => window.NCA && NCA.sfx(n, ...a);
 // melee weapons: cd = swing cooldown, reach in px, boss = damage per hit
-const WPN = { bat: { cd: 0.32, reach: 44, boss: 2, name: 'BAT' }, crowbar: { cd: 0.24, reach: 42, boss: 2, name: 'CROWBAR' }, saber: { cd: 0.27, reach: 53, boss: 3, name: 'LIGHTSABER', deflect: 0.25 } };
+const WPN = { bat: { cd: 0.32, reach: 44, boss: 2, name: 'BAT' }, crowbar: { cd: 0.21, reach: 43, boss: 3, name: 'CROWBAR' }, saber: { cd: 0.38, reach: 53, boss: 2, name: 'LIGHTSABER', deflect: 0.25 } };
 const WNAME = w => w ? (WPN[w] ? WPN[w].name : w.toUpperCase()) : 'FISTS';
 const BOX_POOL = ['crowbar', 'bat', 'saber'];
 const reach = () => (WPN[S.p.wpn] ? WPN[S.p.wpn].reach : S.p.wpn ? 44 : 33) * (S.pwOn > 0 ? 1.3 : 1);   // ~+10% base melee reach, +30% powered
@@ -145,6 +145,7 @@ function navNext(e, to) {
 // ---------- input ----------
 addEventListener('keydown', e => {
   const k = e.key.toLowerCase(); keys.add(k);
+  if (window.NCA && k === 'b') { NCA.toggleMusic(); return; }
   if (window.NCA && (k === 'n' || k === '-' || k === '=' || k === '+')) { if (k === 'n') NCA.toggleMute(); else NCA.setVol(NCA.vol + (k === '-' ? -0.1 : 0.1)); updMute(); return; }
   if ((k === 'q' || k === 'shift') && mode === 'play') { activatePower(); e.preventDefault(); return; }
   if (mode === 'select') { if (['1', '2', '3'].includes(k)) maskSel = +k - 1; if (k === 'arrowleft' || k === 'a') maskSel = (maskSel + 2) % 3; if (k === 'arrowright' || k === 'd') maskSel = (maskSel + 1) % 3; if (k === 'enter' || k === ' ') { newRun(); e.preventDefault(); } if (k === 'tab' || k === 'arrowup' || k === 'arrowdown' || k === 'w' || k === 's') { gameMode = gameMode === 'story' ? 'waves' : 'story'; e.preventDefault(); } return; }
@@ -158,7 +159,7 @@ addEventListener('keydown', e => {
 });
 addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
 addEventListener('blur', () => { keys.clear(); mouse.down = false; if (mode === 'play' && S && !S.p.dead && !S.won) pause(); });
-function pause() { if (mode !== 'play') return; mode = 'paused'; keys.clear(); mouse.down = false; touch.move = touch.aim = null; setModeClass(); if (window.NCA) { NCA.duck(0.4); NCA.hum(false); } }
+function pause() { if (mode !== 'play') return; mode = 'paused'; keys.clear(); mouse.down = false; touch.move = null; touch.fire = false; setModeClass(); if (window.NCA) { NCA.duck(0.4); NCA.hum(false); } }
 function resume() { mode = 'play'; last = performance.now(); setModeClass(); if (window.NCA) NCA.duck(1); }
 function quitToSelect() { mode = 'select'; setModeClass(); if (window.NCA) { NCA.track('menu'); NCA.duck(1); NCA.hum(false); } }
 cv.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
@@ -174,7 +175,7 @@ cv.addEventListener('contextmenu', e => e.preventDefault());
 const tl = document.getElementById('touch');
 // input mode follows the last real input: touch shows the twin-stick overlay, mouse/pen hides it (touch laptops, 2-in-1s)
 let isTouch = false;
-function setTouchMode(on) { if (on === isTouch) return; isTouch = on; document.body.classList.toggle('is-touch', on); if (!on) { touch.move = touch.aim = null; } }
+function setTouchMode(on) { if (on === isTouch) return; isTouch = on; document.body.classList.toggle('is-touch', on); if (!on) { touch.move = null; touch.fire = false; } }
 addEventListener('pointerdown', e => setTouchMode(e.pointerType === 'touch'), true);
 addEventListener('pointermove', e => { if (e.pointerType === 'mouse' && (e.movementX || e.movementY)) setTouchMode(false); }, true);
 addEventListener('touchstart', () => setTouchMode(true), { capture: true, passive: true });
@@ -188,24 +189,26 @@ addEventListener('pointerdown', e => {
   e.preventDefault();
 });
 const tMute = document.getElementById('tMute');
-function updMute() { if (!tMute || !window.NCA) return; tMute.textContent = NCA.muted || NCA.vol === 0 ? '🔇' : '🔊'; tMute.setAttribute('aria-pressed', String(NCA.muted)); }
-if (tMute) { tMute.addEventListener('click', e => { e.stopPropagation(); if (window.NCA) { NCA.toggleMute(); updMute(); } }); tMute.addEventListener('pointerdown', e => e.stopPropagation()); setTimeout(updMute, 0); }
+function updMute() { if (!tMute || !window.NCA) return; const on = !NCA.muted; tMute.parentNode.classList.toggle('off', !on); const l = tMute.querySelector('.aud-l'); if (l) l.innerHTML = [...('SFX ' + (on ? 'ON' : 'OFF'))].map((c, i) => `<span style="animation-delay:${i * -0.11}s">${c === ' ' ? '&nbsp;' : c}</span>`).join(''); tMute.setAttribute('aria-pressed', String(on)); }
+if (tMute) { tMute.innerHTML = (window.AUD_ICON || '') + '<span class="aud-l"></span>'; tMute.addEventListener('click', e => { e.stopPropagation(); if (window.NCA) { NCA.toggleMute(); updMute(); } }); tMute.addEventListener('pointerdown', e => e.stopPropagation()); setTimeout(updMute, 0); }
 function setModeClass() { document.body.dataset.mode = mode; }
 tl.addEventListener('touchstart', e => {
   if (e.target.closest('.tbtn')) return; e.preventDefault();
   for (const t of e.changedTouches) {
-    if (mode !== 'play') return;
+    if (mode !== 'play' || S.p.dead) return;
     const sx = Math.max(50, Math.min(innerWidth - 50, t.clientX)), sy = Math.max(50, Math.min(innerHeight - 50, t.clientY)); // stick centre >= 50px from edges
-    if (t.clientX < innerWidth / 2) { if (!touch.move) touch.move = { id: t.identifier, x: sx, y: sy, cx: t.clientX, cy: t.clientY }; }
-    else if (!touch.aim) touch.aim = { id: t.identifier, x: sx, y: sy, cx: t.clientX, cy: t.clientY };
+    if (!touch.move) touch.move = { id: t.identifier, x: sx, y: sy, cx: t.clientX, cy: t.clientY }; // one move stick wherever you put your thumb (buttons excluded)
   }
 }, { passive: false });
 tl.addEventListener('touchmove', e => {
   e.preventDefault();
   for (const t of e.changedTouches) for (const s of [touch.move, touch.aim]) if (s && s.id === t.identifier) { s.cx = t.clientX; s.cy = t.clientY; }
 }, { passive: false });
-const tend = e => { for (const t of e.changedTouches) { if (touch.move && touch.move.id === t.identifier) touch.move = null; if (touch.aim && touch.aim.id === t.identifier) touch.aim = null; } };
+const tend = e => { for (const t of e.changedTouches) { if (touch.move && touch.move.id === t.identifier) touch.move = null; } };
 tl.addEventListener('touchend', tend); tl.addEventListener('touchcancel', tend);
+{ const ab = document.getElementById('tAtk'); ab.addEventListener('touchstart', e => { e.preventDefault(); if (mode === 'play') { touch.fire = true; attack(); } }, { passive: false });
+  const up = e => { e.preventDefault(); touch.fire = false; }; ab.addEventListener('touchend', up); ab.addEventListener('touchcancel', up); }
+{ const db = document.getElementById('deadBtn'); const go = e => { e.preventDefault(); e.stopPropagation(); if (mode === 'play' && S.p.dead) newRun(); }; db.addEventListener('touchstart', go, { passive: false }); db.addEventListener('click', go); }
 document.getElementById('tPow').addEventListener('touchstart', e => { e.preventDefault(); activatePower(); }, { passive: false });
 document.getElementById('tThrow').addEventListener('touchstart', e => { e.preventDefault(); if (mode === 'play') throwOrPick(); }, { passive: false });
 const tRb = document.getElementById('tR'); let rArm = -1e9;
@@ -288,7 +291,7 @@ function updateBoss(dt) {
         pop(b.x, b.y - 40, 'GET HIM!', PAL.pink, true); au('summon'); b.st = 'walk'; b.t = 1.6; } break;
   }
 }
-function killPlayer(a) { if (S.p.dead || S.won || GOD || S.locked) return;
+function killPlayer(a) { if (S.p.dead || S.won || GOD || S.locked) return; touch.move = null; touch.fire = false;
   if (S.inv > 0) return;
   if (S.pwOn > 0 && S.hp > 0) { S.hp--; S.inv = 1.2; S.shake = 14; pop(S.p.x, S.p.y - 26, 'BLOCKED! ' + S.hp + ' LEFT', '#16f4ff', true); for (let i = 0; i < 16; i++) S.aura.push(auraP(S.p, 260)); return; } S.p.dead = true; S.p.a = a; splat(S.p.x, S.p.y, a); S.shake = 18; S.endT = S.t; au('playerDie'); if (window.NCA) NCA.duck(0.35); }
 function nearBox() { return S.box.st === 'closed' && !S.p.dead && dist(S.p, BOX) < 52; }
@@ -353,9 +356,13 @@ function update(dt) {
   const ml = Math.hypot(mx, my); if (ml > 1) { mx /= ml; my /= ml; }
   if (!p.dead && !S.won) {
     const sp = pspeed(); moveC(p, mx * sp * dt, my * sp * dt);
-    if (touch.aim) { const dx = touch.aim.cx - touch.aim.x, dy = touch.aim.cy - touch.aim.y; const l = Math.hypot(dx, dy); if (l > 10) p.a = Math.atan2(dy, dx); if (l > 18) attack(); }
-    else if (!isTouch || mouse.x) { const w = toWorld(mouse.x, mouse.y); if (!touch.move || !isTouch) p.a = Math.atan2(w.y - p.y, w.x - p.x); }
-    if (isTouch && !touch.aim && ml > 0.2) p.a = Math.atan2(my, mx);
+    if (isTouch) { // phones: face the move direction, auto-target the nearest visible enemy in front of you
+      const face = ml > 0.2 ? Math.atan2(my, mx) : p.a; let best = null, bd = 1e9;
+      for (const e of S.en) { if (e.dead) continue; const d = dist(p, e); if (d > 230) continue; const off = Math.abs(angDiff(Math.atan2(e.y - p.y, e.x - p.x), face)); if (off > (d < 60 ? 2.2 : 1.25)) continue; const sc = d * (1 + off); if (sc < bd && los(p, e)) { bd = sc; best = e; } }
+      const bo = S.boss && !S.boss.dead ? S.boss : null; if (bo && dist(p, bo) < 260 && Math.abs(angDiff(Math.atan2(bo.y - p.y, bo.x - p.x), face)) < 1.4 && los(p, bo) && (!best || dist(p, bo) < dist(p, best))) best = bo;
+      S.aimT = best; p.a = best ? Math.atan2(best.y - p.y, best.x - p.x) : face;
+      if (touch.fire) attack(); }
+    else { S.aimT = null; const w = toWorld(mouse.x, mouse.y); p.a = Math.atan2(w.y - p.y, w.x - p.x); }
     if (mouse.down) attack();
   }
   p.cd -= dt; p.swing -= dt;
@@ -588,6 +595,7 @@ const MAPC = (() => {
   return { floor, walls };
 })();
 // ---------- render ----------
+function toScreen(x, y) { return { x: (x - S.cam.x) * zoom + W / 2, y: (y - S.cam.y) * zoom + H / 2 }; }
 function toWorld(x, y) { return { x: (x - W / 2) / zoom + S.cam.x, y: (y - H / 2) / zoom + S.cam.y }; }
 function txt(s, x, y, size, col, align = 'center', shadow = '#000') {
   g.font = `${size}px "Press Start 2P"`; g.textAlign = align; g.textBaseline = 'middle';
@@ -694,7 +702,7 @@ function render() {
   txt(String(S.score).padStart(6, '0') + 'pts', sx, sy, ss, PAL.yel, sa, PAL.pink);
   if (S.combo >= 2 && S.t - S.comboT < 2.6) txt('COMBO x' + S.combo, sx, sy + hs * 2.2, hs, PAL.cyan, sa);
   txt(`${S.mask.name}  ${WNAME(S.p.wpn) + (S.p.wpn === 'gun' ? ' ' + S.p.ammo : '')}`, 16, H - 24, hs * 0.8, '#fff', 'left', PAL.vio);
-  txt(`ENEMIES ${S.en.filter(e => !e.dead).length + (S.boss && !S.boss.dead ? 1 : 0)}`, 16, 56, hs * 0.8, PAL.pink, 'left');
+  txt(`ENEMIES ${S.en.filter(e => !e.dead).length + (S.boss && !S.boss.dead ? 1 : 0)}`, 16, 72, hs * 0.8, PAL.pink, 'left');
   if (S.gm === 'waves') {
     const wl = S.wave >= BOSS_WAVE ? 'BOSS' : `WAVE ${S.wave}/${WAVES}`; txt(wl, 16, 56 + hs * 1.6, hs * 0.95, S.wave >= BOSS_WAVE ? PAL.pink : PAL.yel, 'left', PAL.vio);
     if (S.waveT > 0 && !S.p.dead) { const n = Math.ceil(S.waveT), k = 1 + (S.tick || 0) * 0.35; g.save(); g.translate(W / 2, H * 0.24); g.scale(k, k); g.rotate(-0.04);
@@ -709,16 +717,17 @@ function render() {
     gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(1, `hsla(${hue},100%,55%,${0.32 * f})`); g.fillStyle = gr; g.fillRect(0, 0, W, H);
     g.fillStyle = `hsla(${hue},100%,65%,${f})`; g.fillRect(0, 0, W * S.pwOn / PW_DUR, 5); }
   if (S.dil > 0) { g.fillStyle = `rgba(255,255,255,${S.dil * 0.5})`; g.fillRect(0, 0, W, H); }
-  drawPowerHUD(hs);
-  if (isTouch) for (const s of [touch.move, touch.aim]) if (s) { const dx = s.cx - s.x, dy = s.cy - s.y, d = Math.hypot(dx, dy), l = Math.min(50, d), kx = s.x + (d ? dx / d * l : 0), ky = s.y + (d ? dy / d * l : 0), aim = s === touch.aim;
+  if (!S.p.dead) drawPowerHUD(hs);
+  if (isTouch && S.aimT && !S.p.dead) { const q = toScreen(S.aimT.x, S.aimT.y), r = 16 * zoom + 3 * Math.sin(S.t * 10); g.save(); g.strokeStyle = PAL.pink; g.lineWidth = 2; g.setLineDash([6, 5]); g.lineDashOffset = -S.t * 30; g.beginPath(); g.arc(q.x, q.y, r, 0, 6.283); g.stroke(); g.restore(); }
+  { const dd = mode === 'play' && S.p.dead; if (document.body.classList.contains('dead') !== dd) document.body.classList.toggle('dead', dd); }
+  if (isTouch) for (const s of [touch.move]) if (s) { const dx = s.cx - s.x, dy = s.cy - s.y, d = Math.hypot(dx, dy), l = Math.min(50, d), kx = s.x + (d ? dx / d * l : 0), ky = s.y + (d ? dy / d * l : 0), aim = false;
     g.save(); g.lineWidth = 3; g.strokeStyle = (aim ? PAL.pink : PAL.cyan) + '88'; g.beginPath(); g.arc(s.x, s.y, 50, 0, 6.283); g.stroke();
     if (aim) { g.strokeStyle = PAL.pink + '44'; g.lineWidth = 1; g.beginPath(); g.arc(s.x, s.y, 18, 0, 6.283); g.stroke(); }
     g.fillStyle = (aim ? (d > 18 ? PAL.pink : '#ff2a8a66') : PAL.cyan) + (aim && d <= 18 ? '' : 'aa'); g.beginPath(); g.arc(kx, ky, 18, 0, 6.283); g.fill(); g.restore(); }
-  if (nearBox()) { const k = 1 + 0.06 * Math.sin(S.t * 8); g.save(); g.translate(W / 2, H * 0.68); g.scale(k, k); txt(isTouch ? 'TAP OPEN: MYSTERY BOX' : 'PRESS E: SPIN THE MYSTERY BOX', 0, 0, Math.min(14, W / 34), PAL.yel, 'center', PAL.pink); g.restore(); }
+  if (nearBox()) { const k = 1 + 0.06 * Math.sin(S.t * 8); g.save(); g.translate(W / 2, H * (isTouch ? 0.36 : 0.68)); g.scale(k, k); txt(isTouch ? 'TAP OPEN: MYSTERY BOX' : 'PRESS E: SPIN THE MYSTERY BOX', 0, 0, Math.min(14, W / 34), PAL.yel, 'center', PAL.pink); g.restore(); }
   if (tThrowB) { const lbl = nearBox() ? 'OPEN' : 'THROW'; if (tThrowB.textContent !== lbl) tThrowB.textContent = lbl; }
   if (S.clear && !S.won) { const s = 1 + 0.08 * Math.sin(S.t * 10); g.save(); g.translate(W / 2, H * 0.22); g.scale(s, s); g.rotate(-0.05); txt('GO TO CAR', 0, 0, Math.min(40, W / 14), PAL.yel, 'center', PAL.pink); g.restore(); }
-  if (S.p.dead) { g.fillStyle = 'rgba(80,0,20,.35)'; g.fillRect(0, 0, W, H); const s = 1 + 0.05 * Math.sin(S.t * 8); g.save(); g.translate(W / 2, H / 2); g.scale(s, s); txt("YOU'RE DEAD", 0, -30, Math.min(34, W / 16), PAL.pink, 'center', '#000'); txt(isTouch ? 'TAP R TO RESTART' : 'PRESS R TO RESTART', 0, 24, Math.min(18, W / 30), PAL.yel);
-    if (S.gm === 'waves') txt((S.wave >= BOSS_WAVE ? 'REACHED THE BOSS' : 'REACHED WAVE ' + S.wave + '/' + WAVES) + '  -  ' + S.score + 'pts', 0, 64, Math.min(14, W / 34), PAL.cyan); g.restore(); }
+  if (S.p.dead) { g.fillStyle = 'rgba(80,0,20,.35)'; g.fillRect(0, 0, W, H); const s = 1 + 0.05 * Math.sin(S.t * 8); g.save(); g.translate(W / 2, H / 2); g.scale(s, s); txt("YOU'RE DEAD", 0, -30, Math.min(34, W / 16), PAL.pink, 'center', '#000');     if (S.gm === 'waves') txt((S.wave >= BOSS_WAVE ? 'REACHED THE BOSS' : 'REACHED WAVE ' + S.wave + '/' + WAVES) + '  -  ' + S.score + 'pts', 0, 28, Math.min(14, W / 34), PAL.cyan); g.restore(); }
   if (mode === 'results') renderResults();
   if (mode === 'paused') renderPause();
 }
@@ -728,7 +737,7 @@ function renderPause() {
   g.fillStyle = 'rgba(11,2,22,.82)'; g.fillRect(0, 0, W, H);
   const fs = Math.min(34, W / 12, H / 12); txt('PAUSED', W / 2, H * 0.14, fs, PAL.pink, 'center', PAL.cyan);
   const A = window.NCA, vol = A ? Math.round(A.vol * 100) : 0, mute = A ? A.muted : true;
-  const items = [['RESUME', resume, isTouch ? '' : ' [ESC]'], ['RESTART', newRun, isTouch ? '' : ' [R]'], ['SOUND: ' + (mute ? 'OFF' : 'ON'), () => A && A.toggleMute(), isTouch ? '' : ' [N]'],
+  const items = [['RESUME', resume, isTouch ? '' : ' [ESC]'], ['RESTART', newRun, isTouch ? '' : ' [R]'], ['SFX: ' + (mute ? 'OFF' : 'ON'), () => { A && A.toggleMute(); updMute(); }, isTouch ? '' : ' [N]'], ['MUSIC: ' + (A && A.music ? 'ON' : 'OFF'), () => A && A.toggleMusic(), isTouch ? '' : ' [B]'],
     ['VOL', (x, bx, bw) => A && A.setVol(A.vol + (x < bx + bw / 2 ? -0.1 : 0.1)), ''], ['QUIT TO MASKS', quitToSelect, isTouch ? '' : ' [Q]']];
   const bw = Math.min(320, W - 40), gapY = 10, bh = Math.max(36, Math.min(54, (H * 0.78) / items.length - gapY)), y0 = H * 0.2; pauseBoxes = [];
   items.forEach(([label, fn, key], i) => { const x = W / 2 - bw / 2, y = y0 + i * (bh + gapY); pauseBoxes.push({ x, y, w: bw, h: bh, fn });
@@ -777,7 +786,7 @@ function renderResults() {
   [['PLAY AGAIN' + (isTouch ? '' : ' [R]'), newRun], ['MASKS' + (isTouch ? '' : ' [M]'), quitToSelect]].forEach(([l, fn], i) => { const bx = cx - bw - 8 + i * (bw + 16); resBoxes.push({ x: bx, y: by, w: bw, h: bh, fn });
     g.globalAlpha = ready ? 1 : 0.35; g.fillStyle = i ? '#1a0330' : '#2a0646'; g.fillRect(bx, by, bw, bh); g.strokeStyle = i ? PAL.vio : PAL.yel; g.lineWidth = 3; g.strokeRect(bx, by, bw, bh); txt(l, bx + bw / 2, by + bh / 2, Math.min(11, bw / 14), i ? '#fff' : PAL.yel); g.globalAlpha = 1; });
 }
-function resize() { touch.move = touch.aim = null; SAB = sabEl ? sabEl.offsetHeight : 0; DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR; zoom = Math.min(W, H) < 520 ? Math.max(1.35, Math.min(1.9, Math.max(W, H) / 560)) : Math.max(1, Math.min(2.2, Math.min(W, H) / 400)); }
+function resize() { touch.move = null; touch.fire = false; SAB = sabEl ? sabEl.offsetHeight : 0; DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight; cv.width = W * DPR; cv.height = H * DPR; zoom = Math.min(W, H) < 520 ? Math.max(1.35, Math.min(1.9, Math.max(W, H) / 560)) : Math.max(1, Math.min(2.2, Math.min(W, H) / 400)); }
 setModeClass();
 addEventListener('resize', resize); resize();
 let last = performance.now();
@@ -790,5 +799,5 @@ function loop(now) {
 }
 requestAnimationFrame(loop);
 // test hook (read-only state + dt override for headless verification)
-window.NC = { touchMode: () => isTouch, audio: () => window.NCA && NCA.state(), state: () => S && ({ box: { st: S.box.st, res: S.box.res, show: S.box.show, x: BOX.x, y: BOX.y }, near: nearBox(), mode, gm: S.gm, wave: S.wave, waveT: S.waveT, boss: S.boss && { hp: S.boss.hp, max: S.boss.max, phase: S.boss.phase, st: S.boss.st, dead: S.boss.dead, x: S.boss.x, y: S.boss.y, stun: S.boss.stun }, enemyParams: S.en.filter(e => !e.dead).map(e => [e.w, +e.spd.toFixed(2), +e.react.toFixed(2), +e.smart.toFixed(2)]), wavesCleared: !!S.wavesCleared, test: S.test, pw: S.pw, pwOn: S.pwOn, hp: S.hp, inv: S.inv, reach: reach(), speed: pspeed(), p: { x: S.p.x, y: S.p.y, a: S.p.a, dead: S.p.dead, wpn: S.p.wpn, ammo: S.p.ammo }, en: S.en.map(e => ({ x: e.x, y: e.y, dead: e.dead, stun: e.stun, st: e.st, w: e.w })), items: S.items.map(i => ({ x: i.x, y: i.y, type: i.type })), score: S.score, kills: S.kills, clear: S.clear, won: S.won, grade: S.grade, final: S.final, maxCombo: S.maxCombo, car: CAR, zoom, cam: S.cam }), mode: () => mode, best: () => best };
+window.NC = { touchMode: () => isTouch, audio: () => window.NCA && NCA.state(), state: () => S && ({ box: { st: S.box.st, res: S.box.res, show: S.box.show, x: BOX.x, y: BOX.y }, near: nearBox(), mode, gm: S.gm, wave: S.wave, waveT: S.waveT, boss: S.boss && { hp: S.boss.hp, max: S.boss.max, phase: S.boss.phase, st: S.boss.st, dead: S.boss.dead, x: S.boss.x, y: S.boss.y, stun: S.boss.stun }, enemyParams: S.en.filter(e => !e.dead).map(e => [e.w, +e.spd.toFixed(2), +e.react.toFixed(2), +e.smart.toFixed(2)]), wavesCleared: !!S.wavesCleared, test: S.test, pw: S.pw, pwOn: S.pwOn, hp: S.hp, inv: S.inv, reach: reach(), speed: pspeed(), p: { x: S.p.x, y: S.p.y, a: S.p.a, dead: S.p.dead, wpn: S.p.wpn, ammo: S.p.ammo }, en: S.en.map(e => ({ x: e.x, y: e.y, dead: e.dead, stun: e.stun, st: e.st, w: e.w })), items: S.items.map(i => ({ x: i.x, y: i.y, type: i.type })), score: S.score, kills: S.kills, clear: S.clear, won: S.won, grade: S.grade, final: S.final, maxCombo: S.maxCombo, car: CAR, zoom, cam: S.cam }), mode: () => mode, best: () => best, raw: () => S, kill: () => killPlayer(0) };
 })();

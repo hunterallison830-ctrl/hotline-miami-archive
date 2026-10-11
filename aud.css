@@ -1,0 +1,18 @@
+/* ONE audio control per page: neon VHS cassette + wavy SFX label (+ MUSIC popover on the archive) */
+.aud-wrap{position:fixed;left:calc(10px + env(safe-area-inset-left));bottom:calc(var(--dockH,0px) + 10px + env(safe-area-inset-bottom));z-index:60;display:flex;align-items:stretch;gap:0;font-family:'Press Start 2P',monospace}
+.aud{display:flex;align-items:center;gap:7px;min-height:44px;padding:4px 10px 4px 7px;background:#0d0218e6;border:2px solid #ff2a8a;color:#fff;cursor:pointer;box-shadow:0 0 12px #ff2a8a88,inset 0 0 8px #16f4ff33;position:relative;overflow:hidden;touch-action:manipulation;font:9px 'Press Start 2P',monospace}
+.aud::after{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,#0005 0 1px,transparent 1px 3px);mix-blend-mode:multiply}
+.aud-ico{width:34px;height:22px;flex:none;filter:drop-shadow(0 0 3px #16f4ff)}
+.aud-ico .reel{transform-box:fill-box;transform-origin:center;animation:audSpin 1.4s linear infinite}
+.aud-ico .x{display:none}
+.aud-l{white-space:nowrap;text-shadow:2px 0 #ff2a8a,-2px 0 #16f4ff;letter-spacing:1px}
+.aud-l span{display:inline-block;animation:audWave 1.2s ease-in-out infinite}
+.off .aud{border-color:#7b2cff;box-shadow:0 0 6px #7b2cff66;opacity:.85}.off .aud-ico .reel{animation:none}.off .aud-ico .x{display:inline}.off .aud-l{color:#bba}
+.aud-more{min-width:30px;min-height:44px;margin-left:-2px;border:2px solid #ff2a8a;background:#0d0218e6;color:#16f4ff;font:10px 'Press Start 2P',monospace;cursor:pointer;touch-action:manipulation}
+.aud-pop{position:absolute;bottom:calc(100% + 6px);left:0;background:#0d0218f2;border:2px solid #16f4ff;padding:8px;box-shadow:0 0 14px #16f4ff88;display:grid;gap:6px;min-width:170px}
+.aud-pop[hidden]{display:none}
+.aud-mus{min-height:40px;font:9px 'Press Start 2P',monospace;color:#ffe14d;background:#1a0330;border:2px solid #ffe14d;cursor:pointer}
+.aud-pop small{font:13px 'VT323',monospace;color:#bbb}
+@keyframes audSpin{to{transform:rotate(360deg)}}
+@keyframes audWave{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@media (max-width:520px){.aud{padding:4px 8px 4px 6px}.aud-l{font-size:8px}}

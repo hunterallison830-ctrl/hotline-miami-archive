@@ -4,7 +4,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Monoton&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#ff2a8a"><link rel="icon" href="icons/icon-192.png"><link rel="apple-touch-icon" href="icons/apple-touch-icon.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="HM Archive"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="stylesheet" href="style.css"></head><body>
+<link rel="stylesheet" href="style.css"><link rel="stylesheet" href="aud.css"><link rel="stylesheet" href="phone.css"></head><body>
 <div class="bg"><div class="sun"></div><div class="grid"></div></div>
 <div class="grain"></div><div class="scan"></div><div class="vignette"></div>
 <div class="vhs-osd"><span class="play">&#9654; PLAY</span><span id="clock">SP 0:00:00</span></div>
@@ -23,7 +23,6 @@
   <button data-tab="characters" class="on">CHARACTERS</button>
   <button data-tab="masks">MASKS</button>
   <button data-tab="weapons">WEAPONS</button>
-  <button id="music" aria-pressed="false">MUSIC: OFF</button>
 </nav>
 <section class="controls tape">
   <input id="q" type="search" placeholder="SEARCH THE ARCHIVE..." aria-label="Search">
@@ -40,4 +39,4 @@
   <p>Text summaries and images sourced from the <a href="https://hotlinemiami.fandom.com" target="_blank" rel="noopener">Hotline Miami Wiki</a> (Fandom, CC BY-SA). Story text is condensed from the wiki and contains spoilers. "?" marks a status the wiki only presumes.</p>
   <p class="music-note">Music and sound effects are synthesised live in your browser — no audio files are shipped.</p>
 </footer>
-<script src="sfx.js"></script><script src="app.js"></script></body></html>
+<script src="aud.js"></script><script src="sfx.js"></script><script src="phone.js"></script><script src="app.js"></script></body></html>

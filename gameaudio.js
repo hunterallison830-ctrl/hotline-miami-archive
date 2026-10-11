@@ -1,11 +1,13 @@
 // NIGHT CALL audio: original synthwave/darksynth music sequenced live with WebAudio + synthesised SFX. No audio files.
 // The AudioContext is created on the first user gesture only. Settings (volume, mute) persist in localStorage.
 (() => {
-  const KEY = 'hm_nc_audio';
-  let cfg = { vol: 0.7, mute: false }; try { Object.assign(cfg, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+  const KEY = 'hm_nc_audio2'; // v2 key: everyone starts with SFX + music ON once (old 'muted' saves are ignored)
+  try { localStorage.removeItem('hm_nc_audio'); } catch (e) {}
+  let cfg = { vol: 0.7, mute: false, mus: true }; try { Object.assign(cfg, JSON.parse(localStorage.getItem(KEY) || '{}')); } catch (e) {}
+  if (cfg.vol <= 0) cfg.vol = 0.7;
   let ac = null, master, music, sfx, delay, fb, dist, nb, rec = null;
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) {} };
-  const applyVol = () => { if (master) master.gain.setTargetAtTime(cfg.mute ? 0 : cfg.vol, ac.currentTime, 0.03); };
+  const applyVol = () => { if (!master) return; master.gain.setTargetAtTime(cfg.vol, ac.currentTime, 0.03); sfx.gain.setTargetAtTime(cfg.mute ? 0 : 0.8, ac.currentTime, 0.03); music.gain.setTargetAtTime(cfg.mus ? 0.42 : 0, ac.currentTime, 0.03); };
   function init() {
     if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
     const C = window.AudioContext || window.webkitAudioContext; if (!C) return;
@@ -19,7 +21,8 @@
     nb = ac.createBuffer(1, ac.sampleRate, ac.sampleRate); const d = nb.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     applyVol(); startSeq();
   }
-  for (const ev of ['pointerdown', 'keydown', 'touchend']) addEventListener(ev, init, { capture: true, passive: true });
+  document.addEventListener('visibilitychange', () => { if (!ac) return; if (document.hidden) { if (hum) hum.g.gain.setValueAtTime(0, ac.currentTime); ac.suspend(); } else { ac.resume().then(() => { nextT = ac.currentTime + 0.08; }); } });
+  for (const ev of ['pointerdown', 'keydown', 'touchstart', 'touchend', 'click']) addEventListener(ev, init, { capture: true, passive: true });
   const ok = () => ac && ac.state === 'running';
   const mtof = m => 440 * 2 ** ((m - 69) / 12);
   // ---------- voices ----------
@@ -71,6 +74,7 @@
     if (!ac || ac.state !== 'running') return;
     if (want !== track && step % 16 === 0) { track = want; }
     const sp = 60 / TR[track].bpm / 4;
+    if (nextT < ac.currentTime - 0.05) nextT = ac.currentTime + 0.05; // after a stall/background, skip missed steps instead of bursting them
     while (nextT < ac.currentTime + 0.12) { schedStep(nextT, step); nextT += sp; step++; }
   }
   // ---------- SFX ----------
@@ -127,7 +131,8 @@
     get vol() { return cfg.vol; }, get muted() { return cfg.mute; },
     setVol(v) { cfg.vol = Math.max(0, Math.min(1, Math.round(v * 10) / 10)); if (cfg.vol > 0) cfg.mute = false; save(); applyVol(); },
     toggleMute() { cfg.mute = !cfg.mute; save(); applyVol(); return cfg.mute; },
-    state: () => ({ ctx: ac ? ac.state : 'none', track, want, vol: cfg.vol, mute: cfg.mute }),
+    get music() { return cfg.mus; }, toggleMusic() { cfg.mus = !cfg.mus; save(); applyVol(); return cfg.mus; },
+    state: () => ({ ctx: ac ? ac.state : 'none', track, want, vol: cfg.vol, mute: cfg.mute, music: cfg.mus }),
     // test helper: record the mix (for the demo video)
     record() { if (!ac) return false; const d = ac.createMediaStreamDestination(); master.connect(d); const ch = []; rec = new MediaRecorder(d.stream); rec.ondataavailable = e => ch.push(e.data); rec.start(); rec.chunks = ch; return true; },
     stopRecord() { return new Promise(r => { if (!rec) return r(null); rec.onstop = async () => { const b = new Blob(rec.chunks, { type: 'audio/webm' }); const buf = await b.arrayBuffer(); let s = ''; const u = new Uint8Array(buf); for (let i = 0; i < u.length; i += 32768) s += String.fromCharCode.apply(null, u.subarray(i, i + 32768)); r(btoa(s)); }; rec.stop(); }); },

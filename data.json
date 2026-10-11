@@ -129,7 +129,8 @@
    "masks": [],
    "wiki": "https://hotlinemiami.fandom.com/wiki/Biker",
    "quote": "I want out! And you're gonna tell me how!",
-   "quoteSrc": "Wikiquote"
+   "quoteSrc": "Wikiquote",
+   "quoteGame": "HM1"
   },
   {
    "id": "beard",
@@ -175,7 +176,8 @@
    "masks": [],
    "wiki": "https://hotlinemiami.fandom.com/wiki/Beard",
    "quote": "No need to thank me, kid. It's on the house. You would've done the same for me, right?",
-   "quoteSrc": "Hotline Miami Wiki"
+   "quoteSrc": "Hotline Miami Wiki",
+   "quoteGame": "HM2"
   },
   {
    "id": "the-son",
@@ -234,7 +236,8 @@
    "masks": [],
    "wiki": "https://hotlinemiami.fandom.com/wiki/The_Son",
    "quote": "Alright boys! This is it! Tonight we'll be rich! We can do anything we want! The Colombians will have nothing left! They'll learn to fear us!",
-   "quoteSrc": "Hotline Miami Wiki"
+   "quoteSrc": "Hotline Miami Wiki",
+   "quoteGame": "HM2"
   },
   {
    "id": "tony",
@@ -287,7 +290,8 @@
    ],
    "wiki": "https://hotlinemiami.fandom.com/wiki/Tony",
    "quote": "Man, this party stinks. I fucking hate these people.",
-   "quoteSrc": "Hotline Miami Wiki"
+   "quoteSrc": "Hotline Miami Wiki",
+   "quoteGame": "HM2"
   },
   {
    "id": "mark",
@@ -341,7 +345,8 @@
    ],
    "wiki": "https://hotlinemiami.fandom.com/wiki/Mark",
    "quote": "We can always grab some pizza if we don't find anything.",
-   "quoteSrc": "Hotline Miami Wiki"
+   "quoteSrc": "Hotline Miami Wiki",
+   "quoteGame": "HM2"
   },
   {
    "id": "corey",
@@ -388,7 +393,8 @@
    ],
    "wiki": "https://hotlinemiami.fandom.com/wiki/Corey",
    "quote": "We can't just go out and kill random people now, can we?",
-   "quoteSrc": "Hotline Miami Wiki"
+   "quoteSrc": "Hotline Miami Wiki",
+   "quoteGame": "HM2"
   },
   {
    "id": "alex-davis",
@@ -442,7 +448,8 @@
    ],
    "wiki": "https://hotlinemiami.fandom.com/wiki/Alex_Davis",
    "quote": "What the fuck are you waiting fo-",
-   "quoteSrc": "Hotline Miami Wiki"
+   "quoteSrc": "Hotline Miami Wiki",
+   "quoteGame": "HM2"
   },
   {
    "id": "ash-davis",
@@ -495,7 +502,8 @@
    ],
    "wiki": "https://hotlinemiami.fandom.com/wiki/Ash_Davis",
    "quote": "Who invited all these morons?",
-   "quoteSrc": "Hotline Miami Wiki"
+   "quoteSrc": "Hotline Miami Wiki",
+   "quoteGame": "HM2"
   },
   {
    "id": "evan-wright",
@@ -546,7 +554,8 @@
    "masks": [],
    "wiki": "https://hotlinemiami.fandom.com/wiki/Evan_Wright",
    "quote": "You won't have to do that. This book... It's gonna be good. I promise. I just need some more time, OK?",
-   "quoteSrc": "Hotline Miami Wiki"
+   "quoteSrc": "Hotline Miami Wiki",
+   "quoteGame": "HM2"
   },
   {
    "id": "manny-pardo",
@@ -598,7 +607,8 @@
    "masks": [],
    "wiki": "https://hotlinemiami.fandom.com/wiki/Manny_Pardo",
    "quote": "I was born with thick skin.",
-   "quoteSrc": "Hotline Miami Wiki"
+   "quoteSrc": "Hotline Miami Wiki",
+   "quoteGame": "HM2"
   },
   {
    "id": "jake",
@@ -648,7 +658,8 @@
    ],
    "wiki": "https://hotlinemiami.fandom.com/wiki/Jake",
    "quote": "Show some goddamn respect!",
-   "quoteSrc": "Hotline Miami Wiki"
+   "quoteSrc": "Hotline Miami Wiki",
+   "quoteGame": "HM2"
   },
   {
    "id": "richter",
@@ -697,7 +708,8 @@
    ],
    "wiki": "https://hotlinemiami.fandom.com/wiki/Richter",
    "quote": "Good times never last.",
-   "quoteSrc": "Hotline Miami Wiki"
+   "quoteSrc": "Hotline Miami Wiki",
+   "quoteGame": "HM2"
   },
   {
    "id": "martin-brown",
@@ -744,8 +756,9 @@
     "Aubrey"
    ],
    "wiki": "https://hotlinemiami.fandom.com/wiki/Martin_Brown",
-   "quote": "That's not how I see it... I have wanted to do this for a long time. Kill kids, strangle them, beat people's heads in. Rip their eyes out. ...",
-   "quoteSrc": "Hotline Miami Wiki"
+   "quote": "That's not how I see it... I have wanted to do this for a long time. Kill kids. Strangle them. Beat people's heads in. Rip their eyes out. ...",
+   "quoteSrc": "Hotline Miami Wiki",
+   "quoteGame": "HM2"
   },
   {
    "id": "the-henchman",
@@ -783,7 +796,8 @@
    "masks": [],
    "wiki": "https://hotlinemiami.fandom.com/wiki/The_Henchman",
    "quote": "I just want to go home, okay?",
-   "quoteSrc": "Hotline Miami Wiki"
+   "quoteSrc": "Hotline Miami Wiki",
+   "quoteGame": "HM2"
   },
   {
    "id": "h-m-hammarin",
@@ -860,7 +874,8 @@
    ],
    "wiki": "https://hotlinemiami.fandom.com/wiki/Richard",
    "quote": "Leaving this world is not as scary as it sounds.",
-   "quoteSrc": "Hotline Miami Wiki"
+   "quoteSrc": "Hotline Miami Wiki",
+   "quoteGame": "HM2"
   },
   {
    "id": "rasmus",
@@ -886,8 +901,9 @@
     "Rasmus"
    ],
    "wiki": "https://hotlinemiami.fandom.com/wiki/Rasmus",
-   "quote": "You're not a nice person, are you?",
-   "quoteSrc": "Wikiquote"
+   "quote": "You're not a very nice person, are you?",
+   "quoteSrc": "Wikiquote",
+   "quoteGame": "HM1"
   },
   {
    "id": "don-juan",
@@ -915,7 +931,8 @@
    ],
    "wiki": "https://hotlinemiami.fandom.com/wiki/Don_Juan",
    "quote": "Oh, you don't know who you are?",
-   "quoteSrc": "Wikiquote"
+   "quoteSrc": "Wikiquote",
+   "quoteGame": "HM1"
   },
   {
    "id": "girlfriend",
@@ -946,7 +963,8 @@
    "masks": [],
    "wiki": "https://hotlinemiami.fandom.com/wiki/Girlfriend",
    "quote": "Why don't you finish what you've started?",
-   "quoteSrc": "Wikiquote"
+   "quoteSrc": "Wikiquote",
+   "quoteGame": "HM1"
   },
   {
    "id": "the-janitors",
@@ -1003,8 +1021,9 @@
    ],
    "masks": [],
    "wiki": "https://hotlinemiami.fandom.com/wiki/The_Janitors",
-   "quote": "Wake up, man. Don't you see that this is a country at war?",
-   "quoteSrc": "Wikiquote"
+   "quote": "Wake up, man. Don't you see this is a country at war?",
+   "quoteSrc": "Wikiquote",
+   "quoteGame": "HM1"
   },
   {
    "id": "the-father",
@@ -1044,7 +1063,8 @@
    "masks": [],
    "wiki": "https://hotlinemiami.fandom.com/wiki/The_Father",
    "quote": "And who do we have here? You must be one of the assholes killing off my men. Doesn't look like you are here to chat...",
-   "quoteSrc": "Hotline Miami Wiki"
+   "quoteSrc": "Hotline Miami Wiki",
+   "quoteGame": "HM1"
   },
   {
    "id": "the-grandfather",
@@ -1061,7 +1081,8 @@
    "masks": [],
    "wiki": "https://hotlinemiami.fandom.com/wiki/The_Grandfather",
    "quote": "Just go ahead and do what ever you came here to do.",
-   "quoteSrc": "Hotline Miami Wiki"
+   "quoteSrc": "Hotline Miami Wiki",
+   "quoteGame": "HM1"
   },
   {
    "id": "daniels",
@@ -1133,7 +1154,8 @@
    "masks": [],
    "wiki": "https://hotlinemiami.fandom.com/wiki/The_Colonel",
    "quote": "Do be careful, my boy. Don't want any of my men dying on me, ya hear? Got a special supply delivery coming in tonight.",
-   "quoteSrc": "Hotline Miami Wiki"
+   "quoteSrc": "Hotline Miami Wiki",
+   "quoteGame": "HM2"
   },
   {
    "id": "rachael-ward",
@@ -1336,9 +1358,7 @@
    "id": "aleksei",
    "name": "Aleksei",
    "role": "NPC",
-   "games": [
-    "HM1"
-   ],
+   "games": [],
    "status": "UNKNOWN",
    "death": "Unknown (either alive or killed by the Russian mob, the police or the nuke)",
    "img": "img/c/aleksei.png",
@@ -1366,9 +1386,7 @@
     }
    ],
    "masks": [],
-   "wiki": "https://hotlinemiami.fandom.com/wiki/Aleksei",
-   "quote": "Take off the mask.",
-   "quoteSrc": "Hotline Miami Wiki"
+   "wiki": "https://hotlinemiami.fandom.com/wiki/Aleksei"
   },
   {
    "id": "peter",

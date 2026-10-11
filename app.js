@@ -40,7 +40,7 @@ function open(i){
     <span class="tag">${x.role.toUpperCase()}</span>${x.games.map(g=>`<span class="tag">${g}</span>`).join('')}
     <div class="death"><b>STATUS:</b> ${stTxt(x.status)}${x.status==='DEAD?'?' (presumed, not confirmed)':''}<br><b>FATE:</b> ${esc(x.death)}</div></div>
     <div class="stamp ${stCls(x.status)}">${x.status==='DEAD?'?'DEAD?':x.status==='UNKNOWN'?'???':x.status}</div></div>
-    <h3>// FILE</h3>${x.quote?`<blockquote class="pull"><p>&ldquo;${esc(x.quote)}&rdquo;</p><cite>&mdash; ${esc(x.name)} <small>(source: ${esc(x.quoteSrc||'wiki')})</small></cite></blockquote>`:''}<p>${esc(x.desc)}</p>
+    <h3>// FILE</h3>${x.quote?`<blockquote class="pull"><p>&ldquo;${esc(x.quote)}&rdquo;</p><cite>&mdash; ${esc(x.name)} <small>(${x.quoteGame?esc(x.quoteGame==='HM1'?'Hotline Miami':'Hotline Miami 2: Wrong Number')+' · ':''}source: ${esc(x.quoteSrc||'wiki')})</small></cite></blockquote>`:''}<p>${esc(x.desc)}</p>
     <h3>// MASKS</h3>${ms.length?`<div class="masks">${ms.map(maskBox).join('')}</div>`:'<p>No animal mask worn.</p>'}
     <h3>// STORY</h3>${x.story.length?storyHtml(x.story):'<p>No further story details on record.</p>'}`;
   }else if(tab==='masks'){
@@ -73,13 +73,6 @@ $('#grid')?.addEventListener('focusin',e=>{const c=e.target.closest('.card');if(
 $('#gamef')?.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;game=b.dataset.g;document.querySelectorAll('#gamef button').forEach(x=>x.classList.toggle('on',x===b));render()});
 $('#subf')?.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;sub=b.dataset.s;render()});
 $('#q')?.addEventListener('input',e=>{q=e.target.value.trim().toLowerCase();render()});
-// optional synth music (generated, no files)
-let ac,timer;if($('#music'))$('#music').onclick=function(){
-  if(timer){clearInterval(timer);timer=null;this.textContent='MUSIC: OFF';this.setAttribute('aria-pressed','false');return}
-  ac=ac||new AudioContext();const notes=[57,60,64,67,69,67,64,60,53,57,60,64,55,59,62,67];let n=0;
-  timer=setInterval(()=>{const o=ac.createOscillator(),g=ac.createGain(),f=ac.createBiquadFilter();o.type='sawtooth';o.frequency.value=440*2**((notes[n%16]-69)/12);f.type='lowpass';f.frequency.value=900+600*Math.sin(n/8);
-    g.gain.setValueAtTime(.06,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+.22);o.connect(f).connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+.25);n++},180);
-  this.textContent='MUSIC: ON';this.setAttribute('aria-pressed','true')};
 window.HM={open:(k,i)=>{tab=k;open(i)},close,isOpen:()=>!$('#modal').hidden,slug,find:h=>{h=decodeURIComponent(h||'').toLowerCase();if(!h||!D)return null;for(const k of['characters','masks','weapons']){const i=D[k].findIndex(x=>slug(x)===h||x.name.toLowerCase()===h);if(i>=0)return{k,i}}return null}};
 fetch('data.json').then(r=>r.json()).then(d=>{D=d;window.HM.D=d;window.dispatchEvent(new Event('hmdata'));if(!$('#grid'))return;
   const P=new URLSearchParams(location.search),hh=decodeURIComponent(location.hash.slice(1)),hit=window.HM.find(hh);
